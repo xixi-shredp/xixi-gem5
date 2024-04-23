@@ -1,0 +1,6 @@
+Import('*')
+
+SimObject('SimpleMemobj.py',sim_objects=['SimpleMemobj'])
+Source('simple_memobj.cc')
+
+DebugFlag('SimpleMemobj')
