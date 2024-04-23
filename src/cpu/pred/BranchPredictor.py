@@ -180,6 +180,20 @@ class TournamentBP(BranchPredictor):
     choiceCtrBits = Param.Unsigned(2, "Bits of choice counters")
 
 
+class GshareBP(BranchPredictor):
+    type = "GshareBP"
+    cxx_class = "gem5::branch_prediction::GshareBP"
+    cxx_header = "cpu/pred/gshare.hh"
+
+    localPredictorSize = Param.Unsigned(2048, "Size of local predictor")
+    localCtrBits = Param.Unsigned(2, "Bits per counter")
+    localHistoryTableSize = Param.Unsigned(2048, "size of local history table")
+    globalPredictorSize = Param.Unsigned(8192, "Size of global predictor")
+    globalCtrBits = Param.Unsigned(2, "Bits per counter")
+    choicePredictorSize = Param.Unsigned(8192, "Size of choice predictor")
+    choiceCtrBits = Param.Unsigned(2, "Bits of choice counters")
+
+
 class BiModeBP(BranchPredictor):
     type = "BiModeBP"
     cxx_class = "gem5::branch_prediction::BiModeBP"
