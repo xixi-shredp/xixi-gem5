@@ -52,55 +52,19 @@ namespace branch_prediction
 
 GshareBP::GshareBP(const GshareBPParams &params)
     : BPredUnit(params),
-      localPredictorSize(params.localPredictorSize),
-      localCtrBits(params.localCtrBits),
-      localCtrs(localPredictorSize, SatCounter8(localCtrBits)),
-      localHistoryTableSize(params.localHistoryTableSize),
-      localHistoryBits(ceilLog2(params.localPredictorSize)),
       globalPredictorSize(params.globalPredictorSize),
       globalCtrBits(params.globalCtrBits),
       globalCtrs(globalPredictorSize, SatCounter8(globalCtrBits)),
       globalHistory(params.numThreads, 0),
-      globalHistoryBits(
-          ceilLog2(params.globalPredictorSize) >
-          ceilLog2(params.choicePredictorSize) ?
-          ceilLog2(params.globalPredictorSize) :
-          ceilLog2(params.choicePredictorSize)),
-      choicePredictorSize(params.choicePredictorSize),
-      choiceCtrBits(params.choiceCtrBits),
-      choiceCtrs(choicePredictorSize, SatCounter8(choiceCtrBits))
+      globalHistoryBits(ceilLog2(params.globalPredictorSize))
 {
-    if (!isPowerOf2(localPredictorSize)) {
-        fatal("Invalid local predictor size!\n");
-    }
-
     if (!isPowerOf2(globalPredictorSize)) {
         fatal("Invalid global predictor size!\n");
     }
 
-    localPredictorMask = mask(localHistoryBits);
-
-    if (!isPowerOf2(localHistoryTableSize)) {
-        fatal("Invalid local history table size!\n");
-    }
-
-    //Setup the history table for the local table
-    localHistoryTable.resize(localHistoryTableSize);
-
-    for (int i = 0; i < localHistoryTableSize; ++i)
-        localHistoryTable[i] = 0;
-
     // Set up the global history mask
     // this is equivalent to mask(log2(globalPredictorSize)
     globalHistoryMask = globalPredictorSize - 1;
-
-    if (!isPowerOf2(choicePredictorSize)) {
-        fatal("Invalid choice predictor size!\n");
-    }
-
-    // Set up choiceHistoryMask
-    // this is equivalent to mask(log2(choicePredictorSize)
-    choiceHistoryMask = choicePredictorSize - 1;
 
     //Set up historyRegisterMask
     historyRegisterMask = mask(globalHistoryBits);
@@ -109,28 +73,14 @@ GshareBP::GshareBP(const GshareBPParams &params)
     if (globalHistoryMask > historyRegisterMask) {
         fatal("Global predictor too large for global history bits!\n");
     }
-    if (choiceHistoryMask > historyRegisterMask) {
-        fatal("Choice predictor too large for global history bits!\n");
-    }
 
-    if (globalHistoryMask < historyRegisterMask &&
-        choiceHistoryMask < historyRegisterMask) {
+    if (globalHistoryMask < historyRegisterMask) {
         inform("More global history bits than required by predictors\n");
     }
 
     // Set thresholds for the three predictors' counters
     // This is equivalent to (2^(Ctr))/2 - 1
-    localThreshold  = (1ULL << (localCtrBits  - 1)) - 1;
     globalThreshold = (1ULL << (globalCtrBits - 1)) - 1;
-    choiceThreshold = (1ULL << (choiceCtrBits - 1)) - 1;
-}
-
-inline
-unsigned
-GshareBP::calcLocHistIdx(Addr &branch_addr)
-{
-    // Get low order bits after removing instruction offset.
-    return (branch_addr >> instShiftAmt) & (localHistoryTableSize - 1);
 }
 
 inline
@@ -141,59 +91,24 @@ GshareBP::updateGlobalHist(ThreadID tid, bool taken)
     globalHistory[tid] = globalHistory[tid] & historyRegisterMask;
 }
 
-inline
-void
-GshareBP::updateLocalHist(unsigned local_history_idx, bool taken)
-{
-    localHistoryTable[local_history_idx] =
-        (localHistoryTable[local_history_idx] << 1) | taken;
-}
-
 bool
 GshareBP::lookup(ThreadID tid, Addr pc, void * &bp_history)
 {
-    bool local_prediction;
-    unsigned local_history_idx;
-    unsigned local_predictor_idx;
-
     bool global_prediction;
     unsigned global_predictor_idx;
-    bool choice_prediction;
-    unsigned choice_predictor_idx;
 
-    //Lookup in the local predictor to get its branch prediction
-    local_history_idx = calcLocHistIdx(pc);
-    local_predictor_idx = localHistoryTable[local_history_idx]
-        & localPredictorMask;
-    local_prediction = localCtrs[local_predictor_idx] > localThreshold;
 
     //Lookup in the global predictor to get its branch prediction
     global_predictor_idx = (pc ^ globalHistory[tid]) & globalHistoryMask;
     global_prediction = globalThreshold < globalCtrs[global_predictor_idx];
 
-    //Lookup in the choice predictor to see which one to use
-    choice_predictor_idx = (pc ^ globalHistory[tid]) & choiceHistoryMask;
-    choice_prediction = choiceThreshold < choiceCtrs[choice_predictor_idx];
-
     // Create BPHistory and pass it back to be recorded.
     BPHistory *history = new BPHistory;
     history->globalHistory = globalHistory[tid];
-    history->localPredTaken = local_prediction;
     history->globalPredTaken = global_prediction;
-    history->globalUsed = choice_prediction;
-    history->localHistoryIdx = local_history_idx;
-    history->localHistory = local_predictor_idx;
     bp_history = (void *)history;
 
-    assert(local_history_idx < localHistoryTableSize);
-
-    // Select and return the prediction
-    // History update will be happen in the next function
-    if (choice_prediction) {
-        return global_prediction;
-    } else {
-        return local_prediction;
-    }
+    return global_prediction;
 }
 
 void
@@ -205,22 +120,12 @@ GshareBP::updateHistories(ThreadID tid, Addr pc, bool uncond,
         // Create BPHistory and pass it back to be recorded.
         BPHistory *history = new BPHistory;
         history->globalHistory = globalHistory[tid];
-        history->localPredTaken = true;
         history->globalPredTaken = true;
-        history->globalUsed = true;
-        history->localHistoryIdx = invalidPredictorIndex;
-        history->localHistory = invalidPredictorIndex;
         bp_history = static_cast<void *>(history);
     }
 
     // Update the global history for all branches
     updateGlobalHist(tid, taken);
-
-    // Update the local history only for conditional branches
-    if (!uncond) {
-        auto history = static_cast<BPHistory *>(bp_history);
-        updateLocalHist(history->localHistoryIdx, taken);
-    }
 }
 
 
@@ -233,51 +138,14 @@ GshareBP::update(ThreadID tid, Addr pc, bool taken,
 
     BPHistory *history = static_cast<BPHistory *>(bp_history);
 
-    unsigned local_history_idx = calcLocHistIdx(pc);
-
-    assert(local_history_idx < localHistoryTableSize);
-
-    // Unconditional branches do not use local history.
-    bool old_local_pred_valid = history->localHistory !=
-            invalidPredictorIndex;
-
     // If this is a misprediction, restore the speculatively
-    // updated state (global history register and local history)
-    // and update again.
+    // updated state (global history register) and update again.
     if (squashed) {
         // Global history restore and update
         globalHistory[tid] = (history->globalHistory << 1) | taken;
         globalHistory[tid] &= historyRegisterMask;
 
-        // Local history restore and update.
-        if (old_local_pred_valid) {
-            localHistoryTable[local_history_idx] =
-                        (history->localHistory << 1) | taken;
-        }
-
         return;
-    }
-
-    unsigned old_local_pred_index = history->localHistory &
-        localPredictorMask;
-
-    assert(old_local_pred_index < localPredictorSize);
-
-    // Update the choice predictor to tell it which one was correct if
-    // there was a prediction.
-    if (history->localPredTaken != history->globalPredTaken &&
-        old_local_pred_valid)
-    {
-        // If the local prediction matches the actual outcome,
-        // decrement the counter. Otherwise increment the
-        // counter.
-        unsigned choice_predictor_idx =
-            (pc ^ history->globalHistory) & choiceHistoryMask;
-        if (history->localPredTaken == taken) {
-            choiceCtrs[choice_predictor_idx]--;
-        } else if (history->globalPredTaken == taken) {
-            choiceCtrs[choice_predictor_idx]++;
-        }
     }
 
     // Update the counters with the proper
@@ -289,14 +157,8 @@ GshareBP::update(ThreadID tid, Addr pc, bool taken,
             (pc ^ history->globalHistory) & globalHistoryMask;
     if (taken) {
         globalCtrs[global_predictor_idx]++;
-        if (old_local_pred_valid) {
-            localCtrs[old_local_pred_index]++;
-        }
     } else {
         globalCtrs[global_predictor_idx]--;
-        if (old_local_pred_valid) {
-            localCtrs[old_local_pred_index]--;
-        }
     }
 
     // We're done with this history, now delete it.
@@ -311,11 +173,6 @@ GshareBP::squash(ThreadID tid, void * &bp_history)
 
     // Restore global history to state prior to this branch.
     globalHistory[tid] = history->globalHistory;
-
-    // Restore local history
-    if (history->localHistoryIdx != invalidPredictorIndex) {
-        localHistoryTable[history->localHistoryIdx] = history->localHistory;
-    }
 
     // Delete this BPHistory now that we're done with it.
     delete history;

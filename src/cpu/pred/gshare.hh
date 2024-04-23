@@ -89,24 +89,10 @@ class GshareBP : public BPredUnit
      */
     inline bool getPrediction(uint8_t &count);
 
-    /**
-     * Returns the local history index, given a branch address.
-     * @param branch_addr The branch's PC address.
-     */
-    inline unsigned calcLocHistIdx(Addr &branch_addr);
-
     /** Updates global history with the given direction
      * @param taken Whether or not the branch was taken
     */
     inline void updateGlobalHist(ThreadID tid, bool taken);
-
-    /**
-     * Updates local histories.
-     * @param local_history_idx The local history table entry that
-     * will be updated.
-     * @param taken Whether or not the branch was taken.
-     */
-    inline void updateLocalHist(unsigned local_history_idx, bool taken);
 
     /**
      * The branch history information that is created upon predicting
@@ -125,36 +111,11 @@ class GshareBP : public BPredUnit
         static int newCount;
 #endif
         unsigned globalHistory;
-        unsigned localHistoryIdx;
-        unsigned localHistory;
-        bool localPredTaken;
         bool globalPredTaken;
-        bool globalUsed;
     };
 
     /** Flag for invalid predictor index */
     static const int invalidPredictorIndex = -1;
-    /** Number of counters in the local predictor. */
-    unsigned localPredictorSize;
-
-    /** Mask to truncate values stored in the local history table. */
-    unsigned localPredictorMask;
-
-    /** Number of bits of the local predictor's counters. */
-    unsigned localCtrBits;
-
-    /** Local counters. */
-    std::vector<SatCounter8> localCtrs;
-
-    /** Array of local history table entries. */
-    std::vector<unsigned> localHistoryTable;
-
-    /** Number of entries in the local history table. */
-    unsigned localHistoryTableSize;
-
-    /** Number of bits for each entry of the local history table. */
-    unsigned localHistoryBits;
-
     /** Number of entries in the global predictor. */
     unsigned globalPredictorSize;
 
@@ -177,29 +138,14 @@ class GshareBP : public BPredUnit
      *  Based on globalPredictorSize.*/
     unsigned globalHistoryMask;
 
-    /** Mask to apply to globalHistory to access choice history table.
-     *  Based on choicePredictorSize.*/
-    unsigned choiceHistoryMask;
-
     /** Mask to control how much history is stored. All of it might not be
      *  used. */
     unsigned historyRegisterMask;
 
-    /** Number of entries in the choice predictor. */
-    unsigned choicePredictorSize;
-
-    /** Number of bits in the choice predictor's counters. */
-    unsigned choiceCtrBits;
-
-    /** Array of counters that make up the choice predictor. */
-    std::vector<SatCounter8> choiceCtrs;
-
     /** Thresholds for the counter value; above the threshold is taken,
      *  equal to or below the threshold is not taken.
      */
-    unsigned localThreshold;
     unsigned globalThreshold;
-    unsigned choiceThreshold;
 };
 
 } // namespace branch_prediction
