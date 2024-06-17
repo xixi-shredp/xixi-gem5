@@ -1,0 +1,6 @@
+Import('*')
+
+SimObject('SimpleCache.py',sim_objects=['SimpleCache'])
+Source('simple_cache.cc')
+
+DebugFlag('SimpleCache')

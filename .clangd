@@ -1,4 +1,0 @@
-If:
-  PathMatch: [.*\.hh, .*\.cc]
-CompileFlags:
-  Add: ["-I/opt/gem5/src","-I/opt/gem5/ext","-I/opt/gem5/build/X86"]
