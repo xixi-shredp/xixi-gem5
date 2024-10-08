@@ -437,9 +437,4 @@ SimpleCache::SimpleCacheStats::SimpleCacheStats(statistics::Group *parent)
     missLatency.init(16); // number of buckets
 }
 
-// SimpleCache *
-// SimpleCacheParams::create() const
-// {
-//     return new SimpleCache(this);
-// }
 } // namespace gem5

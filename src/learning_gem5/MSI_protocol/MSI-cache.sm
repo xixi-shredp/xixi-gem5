@@ -1,0 +1,45 @@
+machine(MachineType:L1Cache, "MSI cache")
+: Sequencer *sequencer;
+  CacheMemory *cacheMemory;
+  bool send_evictions;
+
+  MessageBuffer * requestToDir, network="To", virtual_network="0", vnet_type="request";
+  MessageBuffer * responseToDirOrSibling, network="To", virtual_network="2", vnet_type="response";
+
+  MessageBuffer * forwardFromDir, network="From", virtual_network="1", vnet_type="forward";
+  MessageBuffer * responseFromDirOrSibling, network="From", virtual_network="2", vnet_type="response";
+
+  MessageBuffer * mandatoryQueue;
+{
+  state_declaration(State, desc="Cache states") {
+      M,      AccessPermission:Read_Write,
+                  desc="Modified. Read & write permissions. Owner of block";
+      S,      AccessPermission:Read_Only,
+                  desc="Shared. Read-only, other caches may have the block";
+      I,      AccessPermission:Invalid,
+                  desc="Not present/Invalid";
+
+      // States moving out of I
+      IS_D,   AccessPermission:Invalid,
+                  desc="Invalid, moving to S, waiting for data";
+      IM_AD,  AccessPermission:Invalid,
+                  desc="Invalid, moving to M, waiting for acks and data";
+      IM_A,   AccessPermission:Busy,
+                  desc="Invalid, moving to M, waiting for acks";
+
+      // States moving out of S
+      SM_AD,  AccessPermission:Read_Only,
+                  desc="Shared, moving to M, waiting for acks and 'data'";
+      SM_A,   AccessPermission:Read_Only,
+                  desc="Shared, moving to M, waiting for acks";
+
+
+      // States moving to Invalid
+      MI_A,   AccessPermission:Busy,
+                  desc="Was modified, moving to I, waiting for put ack";
+      SI_A,   AccessPermission:Busy,
+                  desc="Was shared, moving to I, waiting for put ack";
+      II_A,   AccessPermission:Invalid,
+                  desc="Sent valid data before receiving put ack. Waiting for put ack.";
+  }
+}

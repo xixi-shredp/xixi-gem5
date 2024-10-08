@@ -1,0 +1,8 @@
+Import('*')
+# (The SConsopts files are processed before the SConscript files and we need to run the SLICC compiler before SCons executes.)
+
+# Register this protocol with gem5/SCons
+main.Append(ALL_PROTOCOLS=['MSI'])
+
+# Add this directory to the search path for SLICC
+main.Append(PROTOCOL_DIRS=[Dir('.')])
