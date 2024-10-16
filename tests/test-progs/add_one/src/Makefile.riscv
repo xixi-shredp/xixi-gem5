@@ -1,0 +1,6 @@
+bin:
+	mkdir -p ../bin/riscv/linux/
+	riscv64-linux-gnu-gcc add_one.c -o ../bin/riscv/linux/add_one -static
+
+asm:
+	riscv64-linux-gnu-gcc -S add_one.c -o add_one.S -static

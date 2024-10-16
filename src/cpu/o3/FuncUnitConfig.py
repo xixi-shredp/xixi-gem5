@@ -51,9 +51,10 @@ class IntMultDiv(FUDesc):
     opList = [
         OpDesc(opClass="IntMult", opLat=3),
         OpDesc(opClass="IntDiv", opLat=20, pipelined=False),
+        OpDesc(opClass="IntAddOne", opLat=2, pipelined=False),
     ]
 
-    count = 2
+    count = 3
 
 
 class FP_ALU(FUDesc):

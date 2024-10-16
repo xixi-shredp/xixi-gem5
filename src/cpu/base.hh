@@ -756,6 +756,8 @@ class BaseCPU : public ClockedObject
         statistics::Formula numStoreInsts;
         /* Number of instructions executed per cycle */
         statistics::Formula instRate;
+        /** Number of Cycles for each FU was busy */
+        statistics::Vector costCycles;
 
         /* Number of cycles stalled for D-cache responses */
         statistics::Scalar dcacheStallCycles;

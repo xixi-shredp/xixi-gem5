@@ -152,6 +152,13 @@ fastmodel:
         Changes relating to ARM Fast Models
     status: orphaned
 
+fhe-ext:
+    status: maintained
+    desc: >-
+        Custom Extension for FHE
+    maintainers:
+        - xixi-shredp <xj13992157229@outlook.com>
+
 gpu-compute:
     status: maintained
     maintainers:

@@ -46,6 +46,7 @@ class OpClass(Enum):
         "IntAlu",
         "IntMult",
         "IntDiv",
+        "IntAddOne",
         "FloatAdd",
         "FloatCmp",
         "FloatCvt",

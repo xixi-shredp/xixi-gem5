@@ -935,6 +935,8 @@ ExecuteCPUStats::ExecuteCPUStats(statistics::Group *parent, int thread_id)
     ADD_STAT(instRate, statistics::units::Rate<
                 statistics::units::Count, statistics::units::Cycle>::get(),
              "Inst execution rate"),
+    ADD_STAT(costCycles, statistics::units::Cycle::get(),
+             "Number of cycles for per FU type"),
     ADD_STAT(dcacheStallCycles, statistics::units::Cycle::get(),
              "DCache total stall cycles"),
     ADD_STAT(numCCRegReads, statistics::units::Count::get(),
@@ -1005,6 +1007,14 @@ ExecuteCPUStats::ExecuteCPUStats(statistics::Group *parent, int thread_id)
         .prereq(numVecRegReads);
     numVecRegWrites
         .prereq(numVecRegWrites);
+
+    costCycles
+        .init(Num_OpClasses)
+        .flags(statistics::pdf | statistics::dist)
+        ;
+    for (int i=0; i < Num_OpClasses; ++i) {
+        costCycles.subname(i, enums::OpClassStrings[i]);
+    }
 }
 
 BaseCPU::

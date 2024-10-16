@@ -859,6 +859,7 @@ InstructionQueue::scheduleReadyInsts()
                 FUCompletion *execution = new FUCompletion(issuing_inst,
                                                            idx, this);
 
+                cpu->executeStats[tid]->costCycles[op_class] += op_latency;
                 cpu->schedule(execution,
                               cpu->clockEdge(Cycles(op_latency - 1)));
 
