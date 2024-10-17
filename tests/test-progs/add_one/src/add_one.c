@@ -28,21 +28,17 @@
 
 #include <stdio.h>
 
-int
-add_one(int rs1)
-{
-    int dontcare = -5;
-    __asm__ __volatile__(".insn r 0x33, 0, 0x40, %[rs], %[rs], %[dc]"
-                         : [rs] "+r"(rs1)
-                         : [dc] "r"(dontcare));
-    return rs1;
-}
+#define add_one(rs1)\
+    __asm__ __volatile__(".insn r 0x33, 0, 0x40, %[rd], zero, zero" \
+                         :[rd] "+r"(rs1):);
+
 
 int
 test(int src)
 {
+    int dut = src;
     int ref = src + 1;
-    int dut = add_one(src);
+    add_one(dut);
     if (dut != ref) {
         printf("difftest got: dut = %d, ref = %d\n", dut, ref);
         return 1;

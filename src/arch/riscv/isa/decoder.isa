@@ -1777,7 +1777,7 @@ decode QUADRANT default Unknown::unknown() {
                             Rd = rvSext(Rs1_sd - Rs2_sd);
                         }});
                         0x2: add_one({{
-                            Rd = rvSext(Rs1_sd + 1);
+                            Rd = Rd + 1;
                         }}, IntAddOneOp);
                     }
                     0x01: decode BS {
