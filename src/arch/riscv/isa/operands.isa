@@ -110,4 +110,8 @@ def operands {{
     'VL': PCStateOp('uw', 'vl', (None, None, 'IsControl'), 11),
 #VLENB, actually the CSR is read only.
     'VlenbBits': PCStateOp('ud', 'vlenb', (None, None, 'IsControl'), 12),
+#FHEMod and FHEPre
+    'Rs3': IntReg('ud', 'FS3', 'IsInteger', 4),
+    'FHEMod': PCStateOp('ud', 'fhemod', (None, None, 'IsControl'), 13),
+    'FHEPre': PCStateOp('ud', 'fhepre', (None, None, 'IsControl'), 14),
 }};

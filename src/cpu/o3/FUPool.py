@@ -53,6 +53,7 @@ class DefaultFUPool(FUPool):
     FUList = [
         IntALU(),
         IntMultDiv(),
+        FHEMod(),
         FP_ALU(),
         FP_MultDiv(),
         ReadPort(),

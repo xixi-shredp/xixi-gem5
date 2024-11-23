@@ -68,9 +68,13 @@ class PCState : public GenericISA::UPCState<4>
     VTYPE _vtype = (1ULL << 63); // vtype.vill = 1 at initial;
     uint32_t _vl = 0;
 
+    uint64_t _fhemod = 0;
+    uint64_t _fhepre = 0;
+
   public:
     PCState(const PCState &other) : Base(other),
         _rvType(other._rvType), _vtype(other._vtype), _vl(other._vl)
+        _fhemod(other._fhemod), _fhepre(other._fhepre)
     {}
     PCState &operator=(const PCState &other) = default;
     PCState() = default;
@@ -92,6 +96,8 @@ class PCState : public GenericISA::UPCState<4>
         _rvType = pcstate._rvType;
         _vtype = pcstate._vtype;
         _vl = pcstate._vl;
+        _fhemod = pcstate._fhemod;
+        _fhepre = pcstate._fhepre;
     }
 
     void compressed(bool c) { _compressed = c; }
@@ -108,6 +114,12 @@ class PCState : public GenericISA::UPCState<4>
 
     uint64_t size() const { return _compressed ? 2 : 4; }
 
+    void fhemod(uint64_t s) { _fhemod = s; }
+    uint64_t fhemod() const { return _fhemod; }
+
+    void fhepre(uint64_t s) { _fhepre = s; }
+    uint64_t fhepre() const { return _fhepre; }
+
     bool
     branching() const override
     {
@@ -120,7 +132,9 @@ class PCState : public GenericISA::UPCState<4>
         auto &opc = other.as<PCState>();
         return Base::equals(other) &&
             _vtype == opc._vtype &&
-            _vl == opc._vl;
+            _vl == opc._vl &&
+            _fhemod == opc._fhemod &&
+            _fhepre == opc._fhepre;
     }
 
     void
@@ -130,6 +144,8 @@ class PCState : public GenericISA::UPCState<4>
         SERIALIZE_SCALAR(_rvType);
         SERIALIZE_SCALAR(_vtype);
         SERIALIZE_SCALAR(_vl);
+        SERIALIZE_SCALAR(_fhemod);
+        SERIALIZE_SCALAR(_fhepre);
         SERIALIZE_SCALAR(_compressed);
     }
 
@@ -140,6 +156,8 @@ class PCState : public GenericISA::UPCState<4>
         UNSERIALIZE_SCALAR(_rvType);
         UNSERIALIZE_SCALAR(_vtype);
         UNSERIALIZE_SCALAR(_vl);
+        UNSERIALIZE_SCALAR(_fhemod);
+        UNSERIALIZE_SCALAR(_fhepre);
         UNSERIALIZE_SCALAR(_compressed);
     }
 };

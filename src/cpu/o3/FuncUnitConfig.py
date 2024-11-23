@@ -57,6 +57,15 @@ class IntMultDiv(FUDesc):
     count = 3
 
 
+class FHEMod(FUDesc):
+    opList = [
+        OpDesc(opClass="FHEAddMod", opLat=2),
+        OpDesc(opClass="FHEMulMod", opLat=11, pipelined=False),
+    ]
+
+    count = 2
+
+
 class FP_ALU(FUDesc):
     opList = [
         OpDesc(opClass="FloatAdd", opLat=2),
