@@ -51,7 +51,7 @@ SimObject('BranchPredictor.py',
     'TAGE_SC_L_TAGE', 'TAGE_SC_L_TAGE_64KB', 'TAGE_SC_L_TAGE_8KB',
     'LTAGE', 'TAGE_SC_L_LoopPredictor', 'StatisticalCorrector', 'TAGE_SC_L',
     'TAGE_SC_L_64KB_StatisticalCorrector',
-    'TAGE_SC_L_8KB_StatisticalCorrector',
+    'TAGE_SC_L_8KB_StatisticalCorrector', 'C910BiModeBP',
     'TAGE_SC_L_64KB', 'TAGE_SC_L_8KB', 'MultiperspectivePerceptron',
     'MultiperspectivePerceptron8KB', 'MultiperspectivePerceptron64KB',
     'MPP_TAGE', 'MPP_LoopPredictor', 'MPP_StatisticalCorrector',
@@ -68,6 +68,7 @@ Source('indirect.cc')
 Source('ras.cc')
 Source('tournament.cc')
 Source('bi_mode.cc')
+Source('c910_bi_mode.cc')
 Source('tage_base.cc')
 Source('tage.cc')
 Source('loop_predictor.cc')

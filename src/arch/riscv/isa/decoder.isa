@@ -997,12 +997,12 @@ decode QUADRANT default Unknown::unknown() {
                     0x0: set_mod({{
                         FHEMod = Rs1;
                         FHEPre = Rs2;
-                    }});
+                    }}, FHEModOp);
                 }
                 0x1: decode FUNCT7 {
                     0x0: mod({{
                         Rd_sd = Rs1_sd < 0 ? Rs1_sd + FHEMod : Rs1_sd;
-                    }});
+                    }}, FHEModOp);
                 }
                 0x2: decode FUNCT7 {
                     0x0: addmod({{
@@ -1029,7 +1029,7 @@ decode QUADRANT default Unknown::unknown() {
                             uint64_t H = static_cast<uint64_t>(Hx >> 64);
                             uint64_t V = U1 < H ? U1 + q - H : U1 - H;
                             Rd = V;
-                        }}, FHEMulModOp);
+                        }}, FHEMontMulModOp);
                     }
                     0x1: bar_modmul_s({{
                         uint64_t a = Rs1;
@@ -1041,7 +1041,7 @@ decode QUADRANT default Unknown::unknown() {
                         uint64_t t1 = p * t;
                         uint64_t z = z1 - t1;
                         Rd = z > p ? (z - p) : z;
-                    }}, FHEMulModOp);
+                    }}, FHEBarMulModOp);
                 }
             }
         }
@@ -2919,11 +2919,11 @@ decode QUADRANT default Unknown::unknown() {
                     0x3a: vaddmod_vv({{
                         __int128_t fhe_c = Vs2_vi[i] + Vs1_vi[i];
                         Vd_vi[i] = fhe_c >= FHEMod ? fhe_c - FHEMod : fhe_c;
-                    }},OPIVV, SimdAluOp);
+                    }},OPIVV, SimdFHEModOp);
                     0x3b: vsubmod_vv({{
                         __int128_t fhe_c = Vs2_vi[i] - Vs1_vi[i];
                         Vd_vi[i] = fhe_c < 0 ? fhe_c + FHEMod : fhe_c;
-                    }},OPIVV, SimdAluOp);
+                    }},OPIVV, SimdFHEModOp);
                     0x3c: vmontredc_vv({{
                         uint64_t T = Vs2_vu[i];
                         uint64_t W = Vs1_vu[i];
@@ -2937,7 +2937,7 @@ decode QUADRANT default Unknown::unknown() {
                         uint64_t H = static_cast<uint64_t>(Hx >> 64);
                         uint64_t V = U1 < H ? U1 + q - H : U1 - H;
                         Vd_vu[i] = V;
-                    }},OPIVV, SimdAluOp);
+                    }},OPIVV, SimdFHEMontMulModOp);
                     0x3d: vbarmulmods_vv({{
                         uint64_t fhe_p = FHEMod;
                         uint64_t fhe_z1 = Vs3_vu[i] * Vs2_vu[i];
@@ -2946,7 +2946,7 @@ decode QUADRANT default Unknown::unknown() {
                         uint64_t fhe_t1 = fhe_p * fhe_t;
                         uint64_t fhe_z = fhe_z1 - fhe_t1;
                         Vd_vu[i] = fhe_z > fhe_p ? (fhe_z - fhe_p) : fhe_z;
-                    }},OPIVV, SimdAluOp);
+                    }},OPIVV, SimdFHEBarMulModOp);
                 }
                 0x0c: VectorGatherFormat::vrgather_vv({{
                     for (uint32_t i = 0; i < microVl; i++) {
@@ -4139,19 +4139,35 @@ decode QUADRANT default Unknown::unknown() {
                     }}, OPIVX, SimdAluOp);
                     // FHE Extension
                     0x38: vmod_vx({{
+                        uint64_t modular = RS1 == 0 ? FHEMod : Rs1_vu;
                         Vd_vi[i] =
-                            Vs2_vi[i] < 0 ? Vs2_vi[i] + FHEMod : Vs2_vi[i];
-                    }},OPIVX, SimdAluOp);
-                    0x3d: vbarmulmods_vxx({{
+                            Vs2_vi[i] < 0 ? Vs2_vi[i] + modular : Vs2_vi[i];
+                    }},OPIVX, SimdFHEModOp);
+                    0x3c: vmontredc_vx({{
+                        uint64_t T = Vs2_vu[i];
+                        uint64_t W = Rs1_vu;
+                        uint64_t q = FHEMod;
+                        uint64_t qInv = FHEPre;
+                        __uint128_t U = static_cast<__uint128_t>(T) * W;
+                        uint64_t U0 = static_cast<uint64_t>(U);
+                        uint64_t U1 = static_cast<uint64_t>(U >> 64);
+                        uint64_t Q = U0 * qInv;
+                        __uint128_t Hx = static_cast<__uint128_t>(Q) * q;
+                        uint64_t H = static_cast<uint64_t>(Hx >> 64);
+                        uint64_t V = U1 < H ? U1 + q - H : U1 - H;
+                        Vd_vu[i] = V;
+                    }},OPIVX, SimdFHEMontMulModOp);
+                }
+                // FHE Extension
+                0x3d: VectorVXXFormat::vbarmulmods_vxx({{
                         uint64_t fhe_p = FHEMod;
-                        uint64_t fhe_z1 = Vs3_vu[i] * Rs2;
+                        uint64_t fhe_z1 = Vs3_vu[i] * Rs1_vu;
                         __uint128_t fhe_mul1 = Vs3_vu[i];
-                        uint64_t fhe_t = (fhe_mul1 * Rs1) >> 64;
+                        uint64_t fhe_t = (fhe_mul1 * Rs2_vu) >> 64;
                         uint64_t fhe_t1 = fhe_p * fhe_t;
                         uint64_t fhe_z = fhe_z1 - fhe_t1;
                         Vd_vu[i] = fhe_z > fhe_p ? (fhe_z - fhe_p) : fhe_z;
-                    }},OPIVX, SimdAluOp);
-                }
+                }}, SimdFHEBarMulModOp);
                 0x0e: VectorSlideUpFormat::vslideup_vx({{
                     const int offset = (int)Rs1_vu;
                     const int microVlmax = vtype_VLMAX(machInst.vtype8,

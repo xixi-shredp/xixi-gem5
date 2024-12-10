@@ -482,6 +482,12 @@ class InstObjParams:
                 self.op_class = "SimdAddOp"
             elif "IsMatrix" in self.flags:
                 self.op_class = "MatrixOp"
+            elif "IsUncondControl" in self.flags:
+                self.op_class = "BranchOp"
+            elif "IsDirectControl" in self.flags:
+                self.op_class = "BranchOp"
+            elif "IsCondControl" in self.flags:
+                self.op_class = "BranchOp"
             else:
                 self.op_class = "IntAluOp"
 

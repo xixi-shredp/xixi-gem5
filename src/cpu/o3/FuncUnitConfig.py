@@ -44,6 +44,7 @@ from m5.SimObject import SimObject
 
 class IntALU(FUDesc):
     opList = [OpDesc(opClass="IntAlu")]
+    opList = [OpDesc(opClass="Branch")]
     count = 6
 
 
@@ -59,11 +60,13 @@ class IntMultDiv(FUDesc):
 
 class FHEMod(FUDesc):
     opList = [
+        OpDesc(opClass="FHEMod", opLat=1),
         OpDesc(opClass="FHEAddMod", opLat=2),
-        OpDesc(opClass="FHEMulMod", opLat=11, pipelined=False),
+        OpDesc(opClass="FHEBarMulMod", opLat=8, pipelined=False),
+        OpDesc(opClass="FHEMontMulMod", opLat=11, pipelined=False),
     ]
 
-    count = 2
+    count = 1
 
 
 class FP_ALU(FUDesc):
@@ -127,6 +130,9 @@ class SIMD_Unit(FUDesc):
         OpDesc(opClass="SimdSha256Hash2"),
         OpDesc(opClass="SimdShaSigma2"),
         OpDesc(opClass="SimdShaSigma3"),
+        OpDesc(opClass="SimdFHEMod", opLat=5),
+        OpDesc(opClass="SimdFHEBarMulMod", opLat=11, pipelined=False),
+        OpDesc(opClass="SimdFHEMontMulMod", opLat=14, pipelined=False),
     ]
     count = 4
 

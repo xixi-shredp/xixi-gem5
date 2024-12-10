@@ -238,6 +238,20 @@ class BiModeBP(BranchPredictor):
     choiceCtrBits = Param.Unsigned(2, "Bits of choice counters")
 
 
+class C910BiModeBP(BranchPredictor):
+    type = "C910BiModeBP"
+    cxx_class = "gem5::branch_prediction::C910BiModeBP"
+    cxx_header = "cpu/pred/c910_bi_mode.hh"
+
+    instShiftAmt = Param.Unsigned(3, "Number of bits to shift instructions by")
+
+    globalHistoryBits = Param.Unsigned(22, "Bits of Global History Register")
+    globalPredictorSize = Param.Unsigned(16384, "Size of global predictor")
+    globalCtrBits = Param.Unsigned(2, "Bits per counter")
+    choicePredictorSize = Param.Unsigned(1024, "Size of choice predictor")
+    choiceCtrBits = Param.Unsigned(2, "Bits of choice counters")
+
+
 class TAGEBase(SimObject):
     type = "TAGEBase"
     cxx_class = "gem5::branch_prediction::TAGEBase"
