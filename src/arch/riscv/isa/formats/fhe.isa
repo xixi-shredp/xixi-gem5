@@ -35,65 +35,6 @@ def format FHEOp(code, *opt_flags) {{
     exec_output = BasicExecute.subst(iop)
 }};
 
-let {{
-    def setVlen():
-        return "uint32_t vlen = VlenbBits * 8;\n"
-    def setVlenb():
-        return "uint32_t vlenb = VlenbBits;\n"
-    def setDestWrapper(destRegId):
-        return "setDestRegIdx(_numDestRegs++, " + destRegId + ");\n" + \
-               "_numTypedDestRegs[VecRegClass]++;\n"
-    def setSrcWrapper(srcRegId):
-        return "setSrcRegIdx(_numSrcRegs++, " + srcRegId + ");\n"
-    def setSrcVm():
-        return "if (!this->vm)\n" + \
-               "    setSrcRegIdx(_numSrcRegs++, vecRegClass[0]);"
-    def vmDeclAndReadData():
-        return '''
-            [[maybe_unused]] RiscvISA::vreg_t tmp_v0;
-            [[maybe_unused]] uint8_t* v0;
-            if(!machInst.vm) {
-                xc->getRegOperand(this, _numSrcRegs-1, &tmp_v0);
-                v0 = tmp_v0.as<uint8_t>();
-            }
-        '''
-    def copyOldVd(vd_idx):
-        return 'COPY_OLD_VD(%d);' % vd_idx
-    def loopWrapper(code, micro_inst = True):
-        if micro_inst:
-            upper_bound = "this->microVl"
-        else:
-            upper_bound = "(uint32_t)machInst.vl"
-        return '''
-            for (uint32_t i = 0; i < %s; i++) {
-                %s
-            }
-        ''' % (upper_bound, code)
-    def maskCondWrapper(code):
-        return "if (this->vm || elem_mask(v0, ei)) {\n" + \
-               code + "}\n"
-    def eiDeclarePrefix(code, widening = False):
-        if widening:
-            return '''
-            uint32_t ei = i + micro_vlmax * this->microIdx;
-            ''' + code
-        else:
-            return '''
-            uint32_t ei = i + vtype_VLMAX(vtype, vlen, true) * this->microIdx;
-            ''' + code
-
-    def declareVArithTemplate(
-        class_name, type_name='uint', min_size=8, max_size=64):
-        sizes = [8, 16, 32, 64]
-        code = ''
-        for size in sizes:
-            if size < min_size or size > max_size:
-                continue
-            code += f'template class {class_name}<{type_name}{size}_t>;\n'
-        return code
-
-}};
-
 def format VectorVXXFormat(code, *flags) {{
     macroop_class_name = 'VectorArithMacroInst'
     microop_class_name = 'VectorArithMicroInst'
@@ -110,6 +51,7 @@ def format VectorVXXFormat(code, *flags) {{
     v0_required = inst_name not in ["vmv"]
     mask_cond = v0_required and (inst_suffix not in ['vvm', 'vxm', 'vim'])
     need_elem_idx = mask_cond or code.find("ei") != -1
+    is_destructive_fused = iop.op_class == "SimdMultAccOp"
 
     dest_reg_id = "vecRegClass[_machInst.vd + _microIdx]"
 
@@ -145,7 +87,6 @@ def format VectorVXXFormat(code, *flags) {{
         vm_decl_rd = vmDeclAndReadData()
 
     set_vlenb = setVlenb()
-    set_vlen = setVlen() if need_elem_idx else ""
 
     microiop = InstObjParams(name + "_micro",
         Name + "Micro",
@@ -154,7 +95,6 @@ def format VectorVXXFormat(code, *flags) {{
          'set_dest_reg_idx': set_dest_reg_idx,
          'set_src_reg_idx': set_src_reg_idx,
          'set_vlenb' : set_vlenb,
-         'set_vlen' : set_vlen,
          'vm_decl_rd': vm_decl_rd,
          'copy_old_vd': copyOldVd(old_vd_idx),
          'declare_varith_template': declareVArithTemplate(Name + "Micro")},

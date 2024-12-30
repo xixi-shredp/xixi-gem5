@@ -73,7 +73,7 @@ class PCState : public GenericISA::UPCState<4>
 
   public:
     PCState(const PCState &other) : Base(other),
-        _rvType(other._rvType), _vtype(other._vtype), _vl(other._vl)
+        _rvType(other._rvType), _vtype(other._vtype), _vl(other._vl),
         _fhemod(other._fhemod), _fhepre(other._fhepre)
     {}
     PCState &operator=(const PCState &other) = default;
