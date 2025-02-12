@@ -43,8 +43,7 @@ from m5.SimObject import SimObject
 
 
 class IntALU(FUDesc):
-    opList = [OpDesc(opClass="IntAlu")]
-    opList = [OpDesc(opClass="Branch")]
+    opList = [OpDesc(opClass="IntAlu"), OpDesc(opClass="Branch")]
     count = 6
 
 
