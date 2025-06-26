@@ -147,6 +147,11 @@ ext-testlib:
     experts:
         - Bobby R. Bruce <bbruce@ucdavis.edu>
 
+ext-spmm:
+    desc: >-
+        Custom ISA Extension for SpMM
+    status: orphaned
+
 fastmodel:
     desc: >-
         Changes relating to ARM Fast Models

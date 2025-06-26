@@ -969,6 +969,10 @@ ExecuteCPUStats::ExecuteCPUStats(statistics::Group *parent, int thread_id)
              "Number of times the vector registers were read"),
     ADD_STAT(numVecRegWrites, statistics::units::Count::get(),
              "Number of times the vector registers were written"),
+    ADD_STAT(numSpMMRegReads, statistics::units::Count::get(),
+             "Number of times the spmm registers were read"),
+    ADD_STAT(numSpMMRegWrites, statistics::units::Count::get(),
+             "Number of times the spmm registers were written"),
     ADD_STAT(numDiscardedOps, statistics::units::Count::get(),
              "Number of ops (including micro ops) which were discarded before "
              "commit")
@@ -1005,6 +1009,10 @@ ExecuteCPUStats::ExecuteCPUStats(statistics::Group *parent, int thread_id)
         .prereq(numVecRegReads);
     numVecRegWrites
         .prereq(numVecRegWrites);
+    numSpMMRegReads
+        .prereq(numSpMMRegReads);
+    numSpMMRegWrites
+        .prereq(numSpMMRegWrites);
 }
 
 BaseCPU::

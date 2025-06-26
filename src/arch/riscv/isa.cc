@@ -46,6 +46,7 @@
 #include "arch/riscv/regs/float.hh"
 #include "arch/riscv/regs/int.hh"
 #include "arch/riscv/regs/misc.hh"
+#include "arch/riscv/regs/spmm.hh"
 #include "arch/riscv/regs/vector.hh"
 #include "base/bitfield.hh"
 #include "base/compiler.hh"
@@ -269,6 +270,7 @@ ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
     _regClasses.push_back(&vecElemClass);
     _regClasses.push_back(&vecPredRegClass);
     _regClasses.push_back(&matRegClass);
+    _regClasses.push_back(&spmmRegClass);
     _regClasses.push_back(&ccRegClass);
     _regClasses.push_back(&miscRegClass);
 
@@ -305,6 +307,13 @@ ISA::copyRegsFrom(ThreadContext *src)
     for (auto &id: vecRegClass) {
         src->getReg(id, &vc);
         tc->setReg(id, &vc);
+    }
+
+    // Fourth loop through the spmm registers.
+    RiscvISA::SpMMRegContainer spmm;
+    for (auto &id: spmmRegClass) {
+        src->getReg(id, &spmm);
+        tc->setReg(id, &spmm);
     }
 
     // Copying Misc Regs

@@ -66,6 +66,7 @@ enum RegClassType
     VecElemClass,
     VecPredRegClass,
     MatRegClass,        ///< Matrix Register
+    SpMMRegClass,       ///< SpMM Vector Register (custom)
     CCRegClass,         ///< Condition-code register
     MiscRegClass,       ///< Control (misc) register
     InvalidRegClass = -1
@@ -79,6 +80,7 @@ inline constexpr char VecElemClassName[] = "vector_element";
 inline constexpr char VecPredRegClassName[] = "vector_predicate";
 inline constexpr char MatRegClassName[] = "matrix";
 inline constexpr char CCRegClassName[] = "condition_code";
+inline constexpr char SpMMRegClassName[] = "spmm";
 inline constexpr char MiscRegClassName[] = "miscellaneous";
 
 class RegClass;

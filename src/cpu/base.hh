@@ -796,6 +796,10 @@ class BaseCPU : public ClockedObject
         mutable statistics::Scalar numVecRegReads;
         statistics::Scalar numVecRegWrites;
 
+        /* Number of spmm register file accesses */
+        mutable statistics::Scalar numSpMMRegReads;
+        statistics::Scalar numSpMMRegWrites;
+
         /* Number of ops discarded before committing */
         statistics::Scalar numDiscardedOps;
     };

@@ -55,6 +55,7 @@ PhysRegFile::PhysRegFile(unsigned _numPhysicalIntRegs,
                          unsigned _numPhysicalVecPredRegs,
                          unsigned _numPhysicalMatRegs,
                          unsigned _numPhysicalCCRegs,
+                         unsigned _numPhysicalSpMMRegs,
                          const BaseISA::RegClasses &reg_classes)
     : intRegFile(*reg_classes.at(IntRegClass), _numPhysicalIntRegs),
       floatRegFile(*reg_classes.at(FloatRegClass), _numPhysicalFloatRegs),
@@ -65,6 +66,7 @@ PhysRegFile::PhysRegFile(unsigned _numPhysicalIntRegs,
       vecPredRegFile(*reg_classes.at(VecPredRegClass),
               _numPhysicalVecPredRegs),
       matRegFile(*reg_classes.at(MatRegClass), _numPhysicalMatRegs),
+      spmmRegFile(*reg_classes.at(SpMMRegClass), _numPhysicalSpMMRegs),
       ccRegFile(*reg_classes.at(CCRegClass), _numPhysicalCCRegs),
       numPhysicalIntRegs(_numPhysicalIntRegs),
       numPhysicalFloatRegs(_numPhysicalFloatRegs),
@@ -74,6 +76,7 @@ PhysRegFile::PhysRegFile(unsigned _numPhysicalIntRegs,
                   reg_classes.at(VecRegClass)->numRegs())),
       numPhysicalVecPredRegs(_numPhysicalVecPredRegs),
       numPhysicalMatRegs(_numPhysicalMatRegs),
+      numPhysicalSpMMRegs(_numPhysicalSpMMRegs),
       numPhysicalCCRegs(_numPhysicalCCRegs),
       totalNumRegs(_numPhysicalIntRegs
                    + _numPhysicalFloatRegs
@@ -81,7 +84,8 @@ PhysRegFile::PhysRegFile(unsigned _numPhysicalIntRegs,
                    + numPhysicalVecElemRegs
                    + _numPhysicalVecPredRegs
                    + _numPhysicalMatRegs
-                   + _numPhysicalCCRegs)
+                   + _numPhysicalCCRegs
+                   + _numPhysicalSpMMRegs)
 {
     RegIndex phys_reg;
     RegIndex flat_reg_idx = 0;
@@ -123,6 +127,13 @@ PhysRegFile::PhysRegFile(unsigned _numPhysicalIntRegs,
     // registers; put them onto the matrix free list.
     for (phys_reg = 0; phys_reg < numPhysicalMatRegs; phys_reg++) {
         matRegIds.emplace_back(*reg_classes.at(MatRegClass), phys_reg,
+                flat_reg_idx++);
+    }
+
+    // The next batch of the registers are the SpMM physical
+    // registers; put them onto the spmm free list.
+    for (phys_reg = 0; phys_reg < numPhysicalSpMMRegs; phys_reg++) {
+        spmmRegIds.emplace_back(*reg_classes.at(SpMMRegClass), phys_reg,
                 flat_reg_idx++);
     }
 
@@ -184,6 +195,13 @@ PhysRegFile::initFreeList(UnifiedFreeList *freeList)
         assert(matRegIds[reg_idx].index() == reg_idx);
     }
     freeList->addRegs(matRegIds.begin(), matRegIds.end());
+
+    /* The next batch of the registers are the spmm physical
+     * registers; put them onto the spmm free list. */
+    for (reg_idx = 0; reg_idx < numPhysicalSpMMRegs; reg_idx++) {
+        assert(spmmRegIds[reg_idx].index() == reg_idx);
+    }
+    freeList->addRegs(spmmRegIds.begin(), spmmRegIds.end());
 
     // The rest of the registers are the condition-code physical
     // registers; put them onto the condition-code free list.

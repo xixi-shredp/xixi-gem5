@@ -92,6 +92,7 @@ CPU::CPU(const BaseO3CPUParams &params)
               params.numPhysVecPredRegs,
               params.numPhysMatRegs,
               params.numPhysCCRegs,
+              params.numPhysSpMMRegs,
               params.isa[0]->regClasses()),
 
       freeList(name() + ".freelist", &regFile),
@@ -218,6 +219,11 @@ CPU::CPU(const BaseO3CPUParams &params)
             regClasses.at(MatRegClass)->numRegs() != 0,
             "Not enough physical registers, consider increasing "
             "numPhysMatRegs\n");
+    panic_if(params.numPhysSpMMRegs <=
+            numThreads * regClasses.at(SpMMRegClass)->numRegs() &&
+            regClasses.at(SpMMRegClass)->numRegs() != 0,
+            "Not enough physical registers, consider increasing "
+            "numPhysSpMMRegs\n");
     panic_if(params.numPhysCCRegs <=
             numThreads * regClasses.at(CCRegClass)->numRegs() &&
             regClasses.at(CCRegClass)->numRegs() != 0,
@@ -970,6 +976,9 @@ CPU::getReg(PhysRegIdPtr phys_reg, ThreadID tid)
       case VecPredRegClass:
         executeStats[tid]->numVecPredRegReads++;
         break;
+      case SpMMRegClass:
+        executeStats[tid]->numSpMMRegReads++;
+        break;
       default:
         break;
     }
@@ -996,6 +1005,9 @@ CPU::getReg(PhysRegIdPtr phys_reg, void *val, ThreadID tid)
       case VecPredRegClass:
         executeStats[tid]->numVecPredRegReads++;
         break;
+      case SpMMRegClass:
+        executeStats[tid]->numSpMMRegReads++;
+        break;
       default:
         break;
     }
@@ -1011,6 +1023,9 @@ CPU::getWritableReg(PhysRegIdPtr phys_reg, ThreadID tid)
         break;
       case VecPredRegClass:
         executeStats[tid]->numVecPredRegWrites++;
+        break;
+      case SpMMRegClass:
+        executeStats[tid]->numSpMMRegWrites++;
         break;
       default:
         break;
@@ -1038,6 +1053,9 @@ CPU::setReg(PhysRegIdPtr phys_reg, RegVal val, ThreadID tid)
       case VecPredRegClass:
         executeStats[tid]->numVecPredRegWrites++;
         break;
+      case SpMMRegClass:
+        executeStats[tid]->numSpMMRegWrites++;
+        break;
       default:
         break;
     }
@@ -1063,6 +1081,9 @@ CPU::setReg(PhysRegIdPtr phys_reg, const void *val, ThreadID tid)
         break;
       case VecPredRegClass:
         executeStats[tid]->numVecPredRegWrites++;
+        break;
+      case SpMMRegClass:
+        executeStats[tid]->numSpMMRegWrites++;
         break;
       default:
         break;

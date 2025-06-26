@@ -95,6 +95,10 @@ class PhysRegFile
     RegFile matRegFile;
     std::vector<PhysRegId> matRegIds;
 
+    /** SpMM vector register file. (Custom) */
+    RegFile spmmRegFile;
+    std::vector<PhysRegId> spmmRegIds;
+
     /** Condition-code register file. */
     RegFile ccRegFile;
     std::vector<PhysRegId> ccRegIds;
@@ -133,6 +137,11 @@ class PhysRegFile
     unsigned numPhysicalMatRegs;
 
     /**
+     * Number of physical SpMM vector registers
+     */
+    unsigned numPhysicalSpMMRegs;
+
+    /**
      * Number of physical CC registers
      */
     unsigned numPhysicalCCRegs;
@@ -150,6 +159,7 @@ class PhysRegFile
                 unsigned _numPhysicalVecRegs,
                 unsigned _numPhysicalVecPredRegs,
                 unsigned _numPhysicalMatRegs,
+                unsigned _numPhysicalSpMMRegs,
                 unsigned _numPhysicalCCRegs,
                 const BaseISA::RegClasses &classes);
 
@@ -233,6 +243,11 @@ class PhysRegFile
             DPRINTF(IEW, "RegFile: Access to matrix register %i, has "
                     "data %s\n", idx, matRegFile.regClass.valString(val));
             break;
+          case SpMMRegClass:
+            spmmRegFile.get(idx, val);
+            DPRINTF(IEW, "RegFile: Access to SpMM register %i, has "
+                    "data %s\n", idx, spmmRegFile.regClass.valString(val));
+            break;
           case CCRegClass:
             *(RegVal *)val = getReg(phys_reg);
             break;
@@ -254,6 +269,8 @@ class PhysRegFile
             return vecPredRegFile.ptr(idx);
           case MatRegClass:
             return matRegFile.ptr(idx);
+          case SpMMRegClass:
+            return spmmRegFile.ptr(idx);
           default:
             panic("Unrecognized register class type %d.", type);
         }
@@ -323,6 +340,11 @@ class PhysRegFile
             DPRINTF(IEW, "RegFile: Setting matrix register %i to %s\n",
                     idx, matRegFile.regClass.valString(val));
             matRegFile.set(idx, val);
+            break;
+          case SpMMRegClass:
+            DPRINTF(IEW, "RegFile: Setting SpMM register %i to %s\n",
+                    idx, spmmRegFile.regClass.valString(val));
+            spmmRegFile.set(idx, val);
             break;
           case CCRegClass:
             setReg(phys_reg, *(RegVal *)val);
