@@ -136,6 +136,8 @@ Rename::RenameStats::RenameStats(statistics::Group *parent)
                "Number of vector predicate rename lookups"),
       ADD_STAT(matLookups, statistics::units::Count::get(),
                "Number of matrix rename lookups"),
+      ADD_STAT(spmmLookups, statistics::units::Count::get(),
+               "Number of SpMM rename lookups"),
       ADD_STAT(committedMaps, statistics::units::Count::get(),
                "Number of HB maps that are committed"),
       ADD_STAT(undoneMaps, statistics::units::Count::get(),
@@ -170,6 +172,7 @@ Rename::RenameStats::RenameStats(statistics::Group *parent)
     vecLookups.prereq(vecLookups);
     vecPredLookups.prereq(vecPredLookups);
     matLookups.prereq(matLookups);
+    spmmLookups.prereq(spmmLookups);
 
     committedMaps.prereq(committedMaps);
     undoneMaps.prereq(undoneMaps);
@@ -1043,6 +1046,9 @@ Rename::renameSrcRegs(const DynInstPtr &inst, ThreadID tid)
           case MatRegClass:
             stats.matLookups++;
             break;
+          case SpMMRegClass:
+            stats.spmmLookups++;
+            break;
           case CCRegClass:
           case MiscRegClass:
             break;
@@ -1267,6 +1273,7 @@ Rename::readFreeEntries(ThreadID tid)
             renameMap[tid]->numFreeEntries(VecElemClass),
             renameMap[tid]->numFreeEntries(VecPredRegClass),
             renameMap[tid]->numFreeEntries(MatRegClass),
+            renameMap[tid]->numFreeEntries(SpMMRegClass),
             renameMap[tid]->numFreeEntries(CCRegClass));
 
     DPRINTF(Rename, "[tid:%i] %i instructions not yet in ROB\n",

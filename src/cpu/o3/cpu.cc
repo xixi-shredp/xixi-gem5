@@ -47,6 +47,7 @@
 #include "cpu/checker/thread_context.hh"
 #include "cpu/o3/dyn_inst.hh"
 #include "cpu/o3/limits.hh"
+#include "cpu/o3/spmm_buffer.hh"
 #include "cpu/o3/thread_context.hh"
 #include "cpu/simple_thread.hh"
 #include "cpu/thread_context.hh"
@@ -108,6 +109,8 @@ CPU::CPU(const BaseO3CPUParams &params)
       decodeQueue(params.backComSize, params.forwardComSize),
       renameQueue(params.backComSize, params.forwardComSize),
       iewQueue(params.backComSize, params.forwardComSize),
+      spmm_buffer(params.SpMMBufferSize,
+                  params.isa[0]->getSpMMVectorLengthInBytes()),
       activityRec(name(), NumStages,
                   params.backComSize + params.forwardComSize,
                   params.activity),

@@ -76,6 +76,7 @@ class ISA : public BaseISA
     RiscvType _rvType;
     std::vector<RegVal> miscRegFile;
     bool enableRvv;
+    bool enableSpMM;
 
     bool hpmCounterEnabled(int counter) const;
 
@@ -93,6 +94,14 @@ class ISA : public BaseISA
      *  ELEN in Ch. 2 of RISC-V vector spec
     */
     unsigned elen;
+
+    /** Length of each SpMM vector register in bits.
+     */
+    unsigned spmm_vlen;
+
+    /** Length of each SpMM vector element in bits.
+    */
+    unsigned spmm_elen;
 
     /** The combination of privilege modes
      *  in Privilege Levels section of RISC-V privileged spec
@@ -171,6 +180,8 @@ class ISA : public BaseISA
 
     bool getEnableRvv() const { return enableRvv; }
 
+    bool getEnableSpMM() const { return enableSpMM; }
+
     void
     clearLoadReservation(ContextID cid)
     {
@@ -184,6 +195,17 @@ class ISA : public BaseISA
     unsigned getVecElemLenInBits() { return elen; }
 
     int64_t getVectorLengthInBytes() const override { return vlen >> 3; }
+
+    /** Methods for getting SpMM_Vlen, Vlenb and elen values */
+    unsigned getSpMMVecLenInBits() { return spmm_vlen; }
+    unsigned getSpMMVecLenInBytes() { return spmm_vlen >> 3; }
+    unsigned getSpMMVecElemLenInBits() { return spmm_elen; }
+
+    int64_t
+    getSpMMVectorLengthInBytes() const override
+    {
+        return spmm_vlen >> 3;
+    }
 
     PrivilegeModeSet getPrivilegeModeSet() { return _privilegeModeSet; }
 

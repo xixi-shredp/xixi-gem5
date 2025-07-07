@@ -185,6 +185,9 @@ EndBitUnion(ExtMachInst)
 constexpr unsigned MaxVecLenInBits = 65536;
 constexpr unsigned MaxVecLenInBytes  = MaxVecLenInBits >> 3;
 
+constexpr unsigned MaxSpMMVecLenInBits = 256;
+constexpr unsigned MaxSpMMVecLenInBytes  = MaxSpMMVecLenInBits >> 3;
+
 
 } // namespace RiscvISA
 } // namespace gem5

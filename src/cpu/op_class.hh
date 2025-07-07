@@ -132,6 +132,13 @@ static const OpClass SimdUnitStrideSegmentedStoreOp
 static const OpClass SimdExtOp = enums::SimdExt;
 static const OpClass SimdFloatExtOp = enums::SimdFloatExt;
 static const OpClass SimdConfigOp = enums::SimdConfig;
+static const OpClass SpMMLDVALIDXOp = enums::SpMMLDVALIDX;
+static const OpClass SpMMVSMVOp = enums::SpMMVSMV;
+static const OpClass SpMMLDPRFOp = enums::SpMMLDPRF;
+static const OpClass SpMMVSMULOp = enums::SpMMVSMUL;
+static const OpClass SpMMSTPSOp = enums::SpMMSTPS;
+static const OpClass SpMMMERGEOp = enums::SpMMMERGE;
+static const OpClass SpMMSTRESOp = enums::SpMMSTRES;
 static const OpClass Num_OpClasses = enums::Num_OpClass;
 
 } // namespace gem5

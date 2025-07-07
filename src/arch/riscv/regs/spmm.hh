@@ -16,7 +16,7 @@ namespace gem5
 namespace RiscvISA
 {
 
-using SpMMRegContainer = gem5::VecRegContainer<MaxVecLenInBytes>;
+using SpMMRegContainer = gem5::VecRegContainer<MaxSpMMVecLenInBytes>;
 using spmm_reg_t = SpMMRegContainer;
 
 

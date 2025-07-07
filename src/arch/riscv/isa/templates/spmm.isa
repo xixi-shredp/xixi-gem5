@@ -1,0 +1,619 @@
+def template SpMMMemDeclare {{
+
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[2];
+    RegId destRegIdxArr[2];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext *, trace::InstRecord *) const override;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
+    Fault completeAcc(PacketPtr, ExecContext *,
+                      trace::InstRecord *) const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template SpMMMemBaseDecodeBlock {{
+    return new %(class_name)s(machInst, spmm_elen, spmm_vlen);
+}};
+
+def template LDVALIDXConstructor {{
+
+%(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                               uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    this->setDelayedCommit();
+    this->setFlag(IsLoad);
+
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setDestRegIdx(_numDestRegs++, spmmRegClass[_machInst.rs2]);
+    _numTypedDestRegs[SpMMRegClass]++;
+    setDestRegIdx(_numDestRegs++, spmmRegClass[_machInst.rs1]);
+    _numTypedDestRegs[SpMMRegClass]++;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
+}
+
+}};
+
+def template LDVALIDXExecute {{
+
+Fault
+%(class_name)s::execute(ExecContext *xc, trace::InstRecord *traceData) const
+{
+    Addr EA;
+    %(op_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    uint32_t mem_size = vlen >> 3;
+    uint32_t e_num = vlen / elen;
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = xc->readMem(EA, Mem.as<uint8_t>(), mem_size, memAccessFlags,
+                              byte_enable);
+
+    if (fault != NoFault)
+        return fault;
+
+    for (size_t i = 0; i < e_num; i++) {
+        %(memacc_code)s;
+    }
+
+    %(op_wb)s;
+    return fault;
+}
+
+}};
+
+def template LDVALIDXInitiateAcc {{
+
+Fault
+%(class_name)s::initiateAcc(ExecContext* xc,
+                            trace::InstRecord* traceData) const
+{
+
+    Addr EA;
+
+    %(op_src_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    uint32_t mem_size = vlen >> 3;
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = initiateMemRead(xc, EA, mem_size, memAccessFlags,
+                                  byte_enable);
+
+    return fault;
+}
+
+}};
+
+def template LDVALIDXCompleteAcc {{
+
+Fault
+%(class_name)s::completeAcc(PacketPtr pkt, ExecContext *xc,
+                            trace::InstRecord *traceData) const
+{
+    %(op_decl)s;
+    %(op_rd)s;
+
+    if (xc->readMemAccPredicate()) {
+        memcpy(Mem.as<uint8_t>(), pkt->getPtr<uint8_t>(), pkt->getSize());
+    }
+
+
+    uint32_t e_num = vlen / elen;
+    for (size_t i = 0; i < e_num; i++) {
+        %(memacc_code)s;
+    }
+
+    %(op_wb)s;
+    return NoFault;
+}
+
+}};
+
+
+
+def template SpMMVSMVDeclare {{
+
+template<typename ElemType>
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[1];
+    RegId destRegIdxArr[1];
+    uint16_t imm;
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template SpMMDecodeBlock {{
+  return new %(class_name)s<uint16_t>(machInst, spmm_elen, spmm_vlen);
+}};
+
+def template SpMMVSMVConstructor {{
+
+template<typename ElemType>
+%(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
+                                         uint32_t _elen, uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setDestRegIdx(_numDestRegs++, intRegClass[_machInst.rd]);
+    _numTypedDestRegs[IntRegClass]++;
+    setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
+    %(imm_code)s;
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template SpMMVSMVExecute {{
+
+template <typename ElemType>
+Fault
+%(class_name)s<ElemType>::execute(ExecContext* xc,
+                                  trace::InstRecord* traceData) const
+{
+    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
+    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+
+    %(op_decl)s;
+    %(op_rd)s;
+    %(code)s;
+    %(op_wb)s;
+
+    return NoFault;
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template LDPRFDeclare {{
+
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[2];
+    RegId destRegIdxArr[1];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext *, trace::InstRecord *) const override;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
+    Fault completeAcc(PacketPtr, ExecContext *,
+                      trace::InstRecord *) const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template LDPRFConstructor {{
+
+%(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                               uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    this->setDelayedCommit();
+    this->setFlag(IsLoad);
+
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setDestRegIdx(_numDestRegs++, spmmRegClass[_machInst.rd]);
+    _numTypedDestRegs[SpMMRegClass]++;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs1]);
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs2]);
+}
+
+}};
+
+def template LDPRFExecute {{
+
+Fault
+%(class_name)s::execute(ExecContext *xc, trace::InstRecord *traceData) const
+{
+    Addr EA, PEA;
+    %(op_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    uint32_t mem_size = vlen >> 3;
+    uint32_t e_num = vlen / elen;
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = xc->readMem(EA, Mem.as<uint8_t>(), mem_size, memAccessFlags,
+                              byte_enable);
+
+    if (fault != NoFault)
+        return fault;
+
+    for (size_t i = 0; i < e_num; i++) {
+        %(memacc_code)s;
+    }
+
+    %(op_wb)s;
+
+    const std::vector<bool> p_byte_enable(mem_size, true);
+    fault = xc->readMem(PEA, Mem.as<uint8_t>(), mem_size, memAccessFlags,
+                              p_byte_enable);
+    return fault;
+}
+
+}};
+
+def template LDPRFInitiateAcc {{
+
+Fault
+%(class_name)s::initiateAcc(ExecContext* xc,
+                            trace::InstRecord* traceData) const
+{
+    Addr EA, PEA;
+
+    %(op_src_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    uint32_t mem_size = vlen >> 3;
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = initiateMemRead(xc, EA, mem_size, memAccessFlags,
+                                  byte_enable);
+    const std::vector<bool> p_byte_enable(mem_size, true);
+    initiateMemRead(xc, PEA, mem_size, memAccessFlags,
+                                  p_byte_enable);
+    return fault;
+}
+
+}};
+
+def template LDPRFCompleteAcc {{
+
+Fault
+%(class_name)s::completeAcc(PacketPtr pkt, ExecContext *xc,
+                            trace::InstRecord *traceData) const
+{
+    %(op_decl)s;
+    %(op_rd)s;
+
+    if (xc->readMemAccPredicate()) {
+        memcpy(Mem.as<uint8_t>(), pkt->getPtr<uint8_t>(), pkt->getSize());
+    }
+
+
+    uint32_t e_num = vlen / elen;
+    for (size_t i = 0; i < e_num; i++) {
+        %(memacc_code)s;
+    }
+
+    %(op_wb)s;
+    return NoFault;
+}
+
+}};
+
+def template SpMMVSMULDeclare {{
+
+template<typename ElemType>
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[2];
+    RegId destRegIdxArr[1];
+    uint16_t imm;
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template SpMMVSMULConstructor {{
+
+template<typename ElemType>
+%(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
+                                         uint32_t _elen, uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setDestRegIdx(_numDestRegs++, intRegClass[_machInst.rd]);
+    _numTypedDestRegs[IntRegClass]++;
+    setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
+    setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs2]);
+    %(imm_code)s;
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template SpMMVSMULExecute {{
+
+template <typename ElemType>
+Fault
+%(class_name)s<ElemType>::execute(ExecContext* xc,
+                                  trace::InstRecord* traceData) const
+{
+    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
+    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+
+    %(op_decl)s;
+    %(op_rd)s;
+
+    uint32_t e_num = vlen / elen;
+
+    for (size_t i = 0; i < e_num; i++) {
+        %(code)s;
+    }
+
+    %(op_wb)s;
+
+    return NoFault;
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template SpMMSTPSDeclare {{
+
+template<typename ElemType>
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[2];
+    RegId destRegIdxArr[0];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template SpMMSTPSConstructor {{
+
+template<typename ElemType>
+%(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
+                                         uint32_t _elen, uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
+    setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template SpMMSTPSExecute {{
+
+template <typename ElemType>
+Fault
+%(class_name)s<ElemType>::execute(ExecContext* xc,
+                                  trace::InstRecord* traceData) const
+{
+    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
+    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+
+    %(op_decl)s;
+    %(op_rd)s;
+
+    uint32_t index;
+    uint8_t* data;
+
+    %(code)s;
+    xc->writeSpMMBuffer(index, data);
+
+    %(op_wb)s;
+
+    return NoFault;
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template SpMMMERGEDeclare {{
+
+template<typename ElemType>
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[3];
+    RegId destRegIdxArr[0];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template SpMMMERGEConstructor {{
+
+template<typename ElemType>
+%(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
+                                         uint32_t _elen, uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs1]);
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs2]);
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template SpMMMERGEExecute {{
+
+template <typename ElemType>
+Fault
+%(class_name)s<ElemType>::execute(ExecContext* xc,
+                                  trace::InstRecord* traceData) const
+{
+    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
+    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+
+    %(op_decl)s;
+    %(op_rd)s;
+
+    uint32_t index0, index1, index_d;
+    ElemType* data0, *data1;
+    data0 = new ElemType[vlen / sizeof(ElemType)];
+    data1 = new ElemType[vlen / sizeof(ElemType)];
+
+    %(code)s;
+
+    xc->readSpMMBuffer(index0, (uint8_t*)data0);
+    xc->readSpMMBuffer(index1, (uint8_t*)data1);
+
+    uint32_t e_num = vlen / elen;
+
+    for (size_t i = 0; i < e_num; i++) {
+        data0[i] += data1[i];
+    }
+
+    xc->writeSpMMBuffer(index_d, (uint8_t*)data0);
+
+    delete [] data0;
+    delete [] data1;
+
+    %(op_wb)s;
+
+    return NoFault;
+}
+
+template class %(class_name)s<uint16_t>;
+
+}};
+
+def template STRESDeclare {{
+
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[2];
+    RegId destRegIdxArr[0];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext *, trace::InstRecord *) const override;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
+    Fault completeAcc(PacketPtr, ExecContext *,
+                      trace::InstRecord *) const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template STRESConstructor {{
+
+%(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                               uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    this->setDelayedCommit();
+    this->setFlag(IsStore);
+
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs1]);
+}
+
+}};
+
+def template STRESExecute {{
+
+Fault
+%(class_name)s::execute(ExecContext *xc, trace::InstRecord *traceData) const
+{
+    Addr EA;
+    uint32_t index;
+    uint32_t mem_size = vlen >> 3;
+    uint8_t* b_data = new uint8_t[mem_size];
+
+    %(op_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    xc->readSpMMBuffer(index, b_data);
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = xc->writeMem(b_data, mem_size, EA, memAccessFlags,
+                         nullptr, byte_enable);
+
+    delete [] b_data;
+
+    if (fault != NoFault)
+        return fault;
+
+    %(op_wb)s;
+
+    return fault;
+}
+
+}};
+
+def template STRESInitiateAcc {{
+
+Fault
+%(class_name)s::initiateAcc(ExecContext* xc,
+                            trace::InstRecord* traceData) const
+{
+    Addr EA;
+    uint32_t index;
+    uint32_t mem_size = vlen >> 3;
+    uint8_t* b_data = new uint8_t[mem_size];
+
+    %(op_src_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    xc->readSpMMBuffer(index, b_data);
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = xc->writeMem(b_data, mem_size, EA, memAccessFlags,
+                         nullptr, byte_enable);
+    delete [] b_data;
+    return fault;
+}
+
+}};
+
+def template STRESCompleteAcc {{
+
+Fault
+%(class_name)s::completeAcc(PacketPtr pkt, ExecContext *xc,
+                            trace::InstRecord *traceData) const
+{
+    return NoFault;
+}
+
+}};

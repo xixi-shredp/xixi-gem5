@@ -991,6 +991,35 @@ decode QUADRANT default Unknown::unknown() {
             }
         }
 
+        0x02: decode FUNCT3 {
+            0x0: LDVALIDXOp::LDVALIDX({{
+                SVd1_uh[i] = Mem_svc.as<uint16_t>()[i*2];
+                SVd2_uh[i] = Mem_svc.as<uint16_t>()[i*2+1];
+            }}, inst_flags=SpMMLDVALIDXOp);
+            0x1: VSMVOp::VSMV({{
+                Rd_uh = SVs1_uh[imm];
+            }}, SpMMVSMVOp);
+            0x2: LDPRFOp::LDPRF({{
+                SVd_uh[i] = Mem_svc.as<uint16_t>()[i];
+            }}, inst_flags=SpMMLDPRFOp);
+            0x3: VSMULOp::VSMUL({{
+                SVd_uh[i] = SVs1_uh[imm] * SVs2_uh[i];
+            }}, SpMMVSMULOp);
+            0x4: STPSOp::STPS({{
+                data = SVs1_svc->as<uint8_t>();
+                index = Rd;
+            }}, SpMMSTPSOp);
+            0x5: MERGEOp::MERGE({{
+                index0 = Rs1;
+                index1 = Rs2;
+                index_d = Rd;
+            }}, SpMMMERGEOp);
+            0x6: STRESOp::STRES({{
+                EA = Rd;
+                index = Rs1;
+            }}, SpMMSTRESOp);
+        }
+
         0x03: decode FUNCT3 {
             format FenceOp {
                 0x0: fence({{

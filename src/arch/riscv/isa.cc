@@ -260,7 +260,8 @@ RegClass ccRegClass(CCRegClass, CCRegClassName, 0, debug::IntRegs);
 } // anonymous namespace
 
 ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
-    _rvType(p.riscv_type), enableRvv(p.enable_rvv), vlen(p.vlen), elen(p.elen),
+    _rvType(p.riscv_type), enableRvv(p.enable_rvv), enableSpMM(p.enable_spmm),
+    vlen(p.vlen), elen(p.elen), spmm_vlen(p.spmm_vlen), spmm_elen(p.spmm_elen),
     _privilegeModeSet(p.privilege_mode_set),
     _wfiResumeOnPending(p.wfi_resume_on_pending), _enableZcd(p.enable_Zcd)
 {
@@ -281,6 +282,11 @@ ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
     inform("RVV enabled, VLEN = %d bits, ELEN = %d bits",
             p.vlen, p.elen);
 
+    fatal_if( p.spmm_vlen < p.spmm_elen,
+    "SpMM_Vlen should be greater or equal than SpMM_Elen.");
+
+    inform("SpMM enabled, SpMM_Vlen = %d bits, SpMM_Elen = %d bits",
+            p.spmm_vlen, p.spmm_elen);
 
     miscRegFile.resize(NUM_PHYS_MISCREGS);
     clear();

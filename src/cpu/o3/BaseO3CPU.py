@@ -157,6 +157,8 @@ class BaseO3CPU(BaseCPU):
 
     numRobs = Param.Unsigned(1, "Number of Reorder Buffers")
 
+    SpMMBufferSize = Param.Unsigned(4, "SpMM buffer size")
+
     numPhysIntRegs = Param.Unsigned(
         256, "Number of physical integer registers"
     )

@@ -64,6 +64,9 @@ class Decoder : public InstDecoder
     uint32_t elen;
     bool _enableZcd;
 
+    uint32_t spmm_vlen;
+    uint32_t spmm_elen;
+
     virtual StaticInstPtr decodeInst(ExtMachInst mach_inst);
 
     /// Decode a machine instruction.

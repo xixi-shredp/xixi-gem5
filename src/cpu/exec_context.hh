@@ -142,6 +142,24 @@ class ExecContext
     }
 
     /**
+     * read the SpMM buffer.
+     */
+    virtual Fault
+    readSpMMBuffer(unsigned int index, uint8_t *data)
+    {
+        panic("ExecContext::readSpMMBuffer() should be overridden\n");
+    }
+
+    /**
+     * write the SpMM buffer.
+     */
+    virtual Fault
+    writeSpMMBuffer(unsigned int index, uint8_t *data)
+    {
+        panic("ExecContext::writeSpMMBuffer() should be overridden\n");
+    }
+
+    /**
      * Initiate a memory management command with no valid address.
      * Currently, these instructions need to bypass squashing in the O3 model
      * Examples include HTM commands and TLBI commands.

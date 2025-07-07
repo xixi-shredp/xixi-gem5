@@ -50,6 +50,7 @@
 #include "cpu/o3/comm.hh"
 #include "cpu/regfile.hh"
 #include "debug/IEW.hh"
+#include "debug/SpMMRegs.hh"
 
 namespace gem5
 {
@@ -247,6 +248,8 @@ class PhysRegFile
             spmmRegFile.get(idx, val);
             DPRINTF(IEW, "RegFile: Access to SpMM register %i, has "
                     "data %s\n", idx, spmmRegFile.regClass.valString(val));
+            DPRINTF(SpMMRegs, "RegFile: Access to SpMM register %i, has "
+                    "data %s\n", idx, spmmRegFile.regClass.valString(val));
             break;
           case CCRegClass:
             *(RegVal *)val = getReg(phys_reg);
@@ -343,6 +346,8 @@ class PhysRegFile
             break;
           case SpMMRegClass:
             DPRINTF(IEW, "RegFile: Setting SpMM register %i to %s\n",
+                    idx, spmmRegFile.regClass.valString(val));
+            DPRINTF(SpMMRegs, "RegFile: Setting SpMM register %i to %s\n",
                     idx, spmmRegFile.regClass.valString(val));
             spmmRegFile.set(idx, val);
             break;

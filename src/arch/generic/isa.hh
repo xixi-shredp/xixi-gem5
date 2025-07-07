@@ -146,6 +146,14 @@ class BaseISA : public SimObject
      * For other ISAs, this function returns -1.
      */
     virtual int64_t getVectorLengthInBytes() const { return -1; }
+
+    /**
+     * This function returns the vector length of the SpMM Vector Length
+     * extension of the ISA.
+     * For RISC-V Custom ISA, this function returns the SpMM vector length.
+     * For other ISAs, this function returns -1.
+     */
+    virtual int64_t getSpMMVectorLengthInBytes() const { return -1; }
 };
 
 } // namespace gem5

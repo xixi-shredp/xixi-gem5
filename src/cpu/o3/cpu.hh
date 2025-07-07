@@ -62,6 +62,7 @@
 #include "cpu/o3/rename.hh"
 #include "cpu/o3/rob.hh"
 #include "cpu/o3/scoreboard.hh"
+#include "cpu/o3/spmm_buffer.hh"
 #include "cpu/o3/thread_state.hh"
 #include "cpu/activity.hh"
 #include "cpu/base.hh"
@@ -475,6 +476,10 @@ class CPU : public BaseCPU
 
     /** The IEW stage's instruction queue. */
     TimeBuffer<IEWStruct> iewQueue;
+
+    /** The SpMM buffer. */
+    SpMMBuffer spmm_buffer;
+
 
   private:
     /** The activity recorder; used to tell if the CPU has any

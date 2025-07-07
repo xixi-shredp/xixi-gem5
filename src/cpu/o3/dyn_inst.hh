@@ -401,6 +401,11 @@ class DynInst : public ExecContext, public RefCounted
 
     Fault initiateMemMgmtCmd(Request::Flags flags) override;
 
+
+    Fault readSpMMBuffer(unsigned int index, uint8_t *data) override;
+
+    Fault writeSpMMBuffer(unsigned int index, uint8_t *data) override;
+
     Fault writeMem(uint8_t *data, unsigned size, Addr addr,
                    Request::Flags flags, uint64_t *res,
                    const std::vector<bool> &byte_enable) override;

@@ -116,6 +116,13 @@ class OpClass(Enum):
         "SimdExt",
         "SimdFloatExt",
         "SimdConfig",
+        "SpMMLDVALIDX",
+        "SpMMVSMV",
+        "SpMMLDPRF",
+        "SpMMVSMUL",
+        "SpMMSTPS",
+        "SpMMMERGE",
+        "SpMMSTRES",
     ]
 
 

@@ -570,6 +570,7 @@ class ISAParser(Grammar):
                 "VecRegOp": VecRegOperandDesc,
                 "VecPredRegOp": VecPredRegOperandDesc,
                 "MatRegOp": MatRegOperandDesc,
+                "SpMMRegOp": SpMMRegOperandDesc,
                 "ControlRegOp": ControlRegOperandDesc,
                 "MemOp": MemOperandDesc,
                 "PCStateOp": PCStateOperandDesc,

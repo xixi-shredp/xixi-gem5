@@ -1,0 +1,134 @@
+def format LDVALIDXOp(
+    memacc_code,
+    ea_code={{
+        EA = Rd;
+    }},
+    mem_flags=[],
+    inst_flags=[]
+) {{
+    mem_flags = makeList(mem_flags)
+    inst_flags = makeList(inst_flags)
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'ea_code': ea_code,
+         'memacc_code': memacc_code},
+        inst_flags)
+
+    if mem_flags:
+        mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]
+        s = '\n\tmemAccessFlags = ' + '|'.join(mem_flags) + ';'
+        iop.constructor += s
+
+
+    header_output   = SpMMMemDeclare.subst(iop)
+    decoder_output  = LDVALIDXConstructor.subst(iop)
+    decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
+    exec_output     = (LDVALIDXExecute.subst(iop) +
+        LDVALIDXInitiateAcc.subst(iop) +
+        LDVALIDXCompleteAcc.subst(iop))
+
+}};
+
+def format VSMVOp(code, *flags) {{
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'code': code, 'imm_code': 'imm = IMM7 & (vlen-1);'}, flags)
+
+    header_output   = SpMMVSMVDeclare.subst(iop)
+    decoder_output  = SpMMVSMVConstructor.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
+    exec_output     = SpMMVSMVExecute.subst(iop)
+
+}};
+
+def format LDPRFOp(
+    memacc_code,
+    ea_code={{
+        EA  = Rs1;
+        PEA = Rs2;
+    }},
+    mem_flags=[],
+    inst_flags=[]
+) {{
+    mem_flags = makeList(mem_flags)
+    inst_flags = makeList(inst_flags)
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'ea_code': ea_code,
+         'memacc_code': memacc_code},
+        inst_flags)
+
+    if mem_flags:
+        mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]
+        s = '\n\tmemAccessFlags = ' + '|'.join(mem_flags) + ';'
+        iop.constructor += s
+
+    header_output   = LDPRFDeclare.subst(iop)
+    decoder_output  = LDPRFConstructor.subst(iop)
+    decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
+    exec_output     = (LDPRFExecute.subst(iop) +
+        LDPRFInitiateAcc.subst(iop) +
+        LDPRFCompleteAcc.subst(iop))
+
+}};
+
+def format VSMULOp(code, *flags) {{
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'code': code, 'imm_code': 'imm = IMM7 & (vlen-1);'}, flags)
+
+    header_output   = SpMMVSMULDeclare.subst(iop)
+    decoder_output  = SpMMVSMULConstructor.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
+    exec_output     = SpMMVSMULExecute.subst(iop)
+
+}};
+
+def format STPSOp(code, *flags) {{
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'code': code}, flags)
+
+    header_output   = SpMMSTPSDeclare.subst(iop)
+    decoder_output  = SpMMSTPSConstructor.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
+    exec_output     = SpMMSTPSExecute.subst(iop)
+
+}};
+
+def format MERGEOp(code, *flags) {{
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'code': code}, flags)
+
+    header_output   = SpMMMERGEDeclare.subst(iop)
+    decoder_output  = SpMMMERGEConstructor.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
+    exec_output     = SpMMMERGEExecute.subst(iop)
+
+}};
+
+def format STRESOp(
+    ea_code,
+    mem_flags=[],
+    inst_flags=[]
+) {{
+    mem_flags = makeList(mem_flags)
+    inst_flags = makeList(inst_flags)
+
+    iop = InstObjParams(name, Name, 'SpMMInst',
+        {'ea_code': ea_code}, inst_flags)
+
+    if mem_flags:
+        mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]
+        s = '\n\tmemAccessFlags = ' + '|'.join(mem_flags) + ';'
+        iop.constructor += s
+
+    header_output   = STRESDeclare.subst(iop)
+    decoder_output  = STRESConstructor.subst(iop)
+    decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
+    exec_output     = (STRESExecute.subst(iop) +
+        STRESInitiateAcc.subst(iop) +
+        STRESCompleteAcc.subst(iop))
+
+}};

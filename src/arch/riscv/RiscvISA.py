@@ -74,6 +74,32 @@ class RiscvVectorElementLength(UInt32):
             raise TypeError("ELEN is not a power of 2: %d" % self.value)
 
 
+class RiscvSpMMVectorLength(UInt32):
+    min = 8
+    max = 65536
+
+    def _check(self):
+        super()._check()
+
+        # VLEN needs to be a whole power of 2. We already know value is
+        # not zero. Hence:
+        if self.value & (self.value - 1) != 0:
+            raise TypeError("VLEN is not a power of 2: %d" % self.value)
+
+
+class RiscvSpMMVectorElementLength(UInt32):
+    min = 8
+    max = 64
+
+    def _check(self):
+        super()._check()
+
+        # ELEN needs to be a whole power of 2. We already know value is
+        # not zero. Hence:
+        if self.value & (self.value - 1) != 0:
+            raise TypeError("ELEN is not a power of 2: %d" % self.value)
+
+
 class RiscvType(Enum):
     vals = ["RV32", "RV64"]
 
@@ -105,6 +131,15 @@ class RiscvISA(BaseISA):
         64,
         "Length of each vector element in bits. \
         ELEN in Ch. 2 of RISC-V vector spec",
+    )
+    enable_spmm = Param.Bool(True, "Enable SpMM extension")
+    spmm_vlen = Param.RiscvSpMMVectorLength(
+        256,
+        "Length of each vector register in bits. (for SpMM)",
+    )
+    spmm_elen = Param.RiscvSpMMVectorElementLength(
+        16,
+        "Length of each vector element register in bits. (for SpMM)",
     )
     privilege_mode_set = Param.PrivilegeModeSet(
         "MSU",

@@ -43,6 +43,8 @@
 #include <algorithm>
 
 #include "base/intmath.hh"
+#include "base/logging.hh"
+#include "base/types.hh"
 #include "debug/DynInst.hh"
 #include "debug/IQ.hh"
 #include "debug/O3PipeView.hh"
@@ -416,6 +418,18 @@ DynInst::initiateMemRead(Addr addr, unsigned size, Request::Flags flags,
         dynamic_cast<DynInstPtr::PtrType>(this),
         /* ld */ true, nullptr, size, addr, flags, nullptr, nullptr,
         byte_enable);
+}
+
+Fault
+DynInst::readSpMMBuffer(unsigned int index, uint8_t *data){
+    cpu->spmm_buffer.read(index, data);
+    return NoFault;
+}
+
+Fault
+DynInst::writeSpMMBuffer(unsigned int index, uint8_t *data){
+    cpu->spmm_buffer.write(index, data);
+    return NoFault;
 }
 
 Fault
