@@ -42,6 +42,48 @@ class SpMMInst : public RiscvStaticInst
 
 };
 
+/**
+ *  Base class for RISC-V SpMM Macro Instructions. (only for LDPRF)
+ */
+class SpMMMacroInst : public RiscvMacroInst
+{
+  protected:
+    uint32_t elen;
+    uint32_t vlen;
+
+    SpMMMacroInst(const char* mnem, ExtMachInst _machInst,
+                   OpClass __opClass, uint32_t _elen, uint32_t _vlen)
+        : RiscvMacroInst(mnem, _machInst, __opClass),
+        elen(_elen),
+        vlen(_vlen)
+    {
+        // this->flags[IsVector] = true;
+    }
+    std::string generateDisassembly(
+            Addr pc, const loader::SymbolTable *symtab) const override;
+};
+
+/**
+ *  Base class for RISC-V SpMM Micro Instructions. (only for LDPRF)
+ */
+class SpMMMicroInst : public RiscvMicroInst
+{
+protected:
+    uint32_t elen;
+    uint32_t vlen;
+    Request::Flags memAccessFlags;
+
+    SpMMMicroInst(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
+        uint32_t _elen, uint32_t _vlen)
+        : RiscvMicroInst(mnem, _machInst, __opClass),
+        elen(_elen), vlen(_vlen), memAccessFlags(0)
+    {
+        // this->flags[IsVector] = true;
+    }
+    std::string generateDisassembly(
+            Addr pc, const loader::SymbolTable *symtab) const override;
+};
+
 } // namespace RiscvISA
 } // namespace gem5
 

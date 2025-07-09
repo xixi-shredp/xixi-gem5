@@ -51,7 +51,7 @@ Fault
     %(op_rd)s;
     %(ea_code)s;
 
-    uint32_t mem_size = vlen >> 3;
+    uint32_t mem_size = (vlen >> 3) * 2;
     uint32_t e_num = vlen / elen;
 
     const std::vector<bool> byte_enable(mem_size, true);
@@ -84,7 +84,7 @@ Fault
     %(op_rd)s;
     %(ea_code)s;
 
-    uint32_t mem_size = vlen >> 3;
+    uint32_t mem_size = (vlen >> 3) * 2;
 
     const std::vector<bool> byte_enable(mem_size, true);
     Fault fault = initiateMemRead(xc, EA, mem_size, memAccessFlags,
@@ -185,12 +185,45 @@ template class %(class_name)s<uint16_t>;
 
 }};
 
-def template LDPRFDeclare {{
+def template LDPRFMacroDeclare {{
 
 class %(class_name)s : public %(base_class)s
 {
 private:
-    RegId srcRegIdxArr[2];
+    %(reg_idx_arr_decl)s;
+    // RegId srcRegIdxArr[2];
+    // RegId destRegIdxArr[1];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template LDPRFMacroConstructor {{
+
+%(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                               uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    %(set_reg_idx_arr)s;
+    %(constructor)s;
+
+    this->microops.push_back(new LDPRFMicro1(_machInst, elen, vlen));
+    this->microops.push_back(new LDPRFMicro2(_machInst, elen, vlen));
+
+    this->microops.front()->setFirstMicroop();
+    this->microops.back()->setLastMicroop();
+}
+
+}};
+
+def template LDPRFMicro1Declare {{
+
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[1];
     RegId destRegIdxArr[1];
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
@@ -203,7 +236,7 @@ public:
 
 }};
 
-def template LDPRFConstructor {{
+def template LDPRFMicro1Constructor {{
 
 %(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
                                uint32_t _vlen)
@@ -218,17 +251,16 @@ def template LDPRFConstructor {{
     setDestRegIdx(_numDestRegs++, spmmRegClass[_machInst.rd]);
     _numTypedDestRegs[SpMMRegClass]++;
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs1]);
-    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs2]);
 }
 
 }};
 
-def template LDPRFExecute {{
+def template LDPRFMicro1Execute {{
 
 Fault
 %(class_name)s::execute(ExecContext *xc, trace::InstRecord *traceData) const
 {
-    Addr EA, PEA;
+    Addr EA;
     %(op_decl)s;
     %(op_rd)s;
     %(ea_code)s;
@@ -248,22 +280,18 @@ Fault
     }
 
     %(op_wb)s;
-
-    const std::vector<bool> p_byte_enable(mem_size, true);
-    fault = xc->readMem(PEA, Mem.as<uint8_t>(), mem_size, memAccessFlags,
-                              p_byte_enable);
     return fault;
 }
 
 }};
 
-def template LDPRFInitiateAcc {{
+def template LDPRFMicro1InitiateAcc {{
 
 Fault
 %(class_name)s::initiateAcc(ExecContext* xc,
                             trace::InstRecord* traceData) const
 {
-    Addr EA, PEA;
+    Addr EA;
 
     %(op_src_decl)s;
     %(op_rd)s;
@@ -274,15 +302,12 @@ Fault
     const std::vector<bool> byte_enable(mem_size, true);
     Fault fault = initiateMemRead(xc, EA, mem_size, memAccessFlags,
                                   byte_enable);
-    const std::vector<bool> p_byte_enable(mem_size, true);
-    initiateMemRead(xc, PEA, mem_size, memAccessFlags,
-                                  p_byte_enable);
     return fault;
 }
 
 }};
 
-def template LDPRFCompleteAcc {{
+def template LDPRFMicro1CompleteAcc {{
 
 Fault
 %(class_name)s::completeAcc(PacketPtr pkt, ExecContext *xc,
@@ -295,13 +320,102 @@ Fault
         memcpy(Mem.as<uint8_t>(), pkt->getPtr<uint8_t>(), pkt->getSize());
     }
 
-
     uint32_t e_num = vlen / elen;
     for (size_t i = 0; i < e_num; i++) {
         %(memacc_code)s;
     }
 
     %(op_wb)s;
+    return NoFault;
+}
+
+}};
+
+def template LDPRFMicro2Declare {{
+
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[1];
+    RegId destRegIdxArr[0];
+public:
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext *, trace::InstRecord *) const override;
+    Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
+    Fault completeAcc(PacketPtr, ExecContext *,
+                      trace::InstRecord *) const override;
+    using %(base_class)s::generateDisassembly;
+};
+
+}};
+
+def template LDPRFMicro2Constructor {{
+
+%(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                               uint32_t _vlen)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+{
+    this->setDelayedCommit();
+    this->setFlag(IsLoad);
+    memAccessFlags = Request::PREFETCH;
+
+    %(set_reg_idx_arr)s;
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs2]);
+}
+
+}};
+
+def template LDPRFMicro2Execute {{
+
+Fault
+%(class_name)s::execute(ExecContext *xc, trace::InstRecord *traceData) const
+{
+    Addr EA;
+    %(op_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    uint32_t mem_size = vlen >> 3;
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = xc->readMem(EA, Mem.as<uint8_t>(), mem_size, memAccessFlags,
+                              byte_enable);
+
+    return fault;
+}
+
+}};
+
+def template LDPRFMicro2InitiateAcc {{
+
+Fault
+%(class_name)s::initiateAcc(ExecContext* xc,
+                            trace::InstRecord* traceData) const
+{
+    Addr EA;
+
+    %(op_src_decl)s;
+    %(op_rd)s;
+    %(ea_code)s;
+
+    uint32_t mem_size = vlen >> 3;
+
+    const std::vector<bool> byte_enable(mem_size, true);
+    Fault fault = initiateMemRead(xc, EA, mem_size, memAccessFlags,
+                                  byte_enable);
+    return fault;
+}
+
+}};
+
+def template LDPRFMicro2CompleteAcc {{
+
+Fault
+%(class_name)s::completeAcc(PacketPtr pkt, ExecContext *xc,
+                            trace::InstRecord *traceData) const
+{
     return NoFault;
 }
 
@@ -334,8 +448,8 @@ template<typename ElemType>
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
     _numDestRegs = 0;
-    setDestRegIdx(_numDestRegs++, intRegClass[_machInst.rd]);
-    _numTypedDestRegs[IntRegClass]++;
+    setDestRegIdx(_numDestRegs++, spmmRegClass[_machInst.rd]);
+    _numTypedDestRegs[SpMMRegClass]++;
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs2]);
     %(imm_code)s;

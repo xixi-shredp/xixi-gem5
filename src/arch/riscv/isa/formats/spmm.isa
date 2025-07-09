@@ -43,9 +43,11 @@ def format VSMVOp(code, *flags) {{
 
 def format LDPRFOp(
     memacc_code,
-    ea_code={{
-        EA  = Rs1;
-        PEA = Rs2;
+    ea1_code={{
+        EA = Rs1;
+    }},
+    ea2_code={{
+        EA = Rs2;
     }},
     mem_flags=[],
     inst_flags=[]
@@ -53,23 +55,36 @@ def format LDPRFOp(
     mem_flags = makeList(mem_flags)
     inst_flags = makeList(inst_flags)
 
-    iop = InstObjParams(name, Name, 'SpMMInst',
-        {'ea_code': ea_code,
-         'memacc_code': memacc_code},
+    iop = InstObjParams(name + 'Macro', Name + 'Macro', 'SpMMMacroInst',
+        { }, inst_flags)
+
+    micro1iop = InstObjParams(name + 'Micro1',
+        Name + 'Micro1',
+        'SpMMMicroInst',
+        {'memacc_code': memacc_code,
+         'ea_code': ea1_code},
         inst_flags)
 
-    if mem_flags:
-        mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]
-        s = '\n\tmemAccessFlags = ' + '|'.join(mem_flags) + ';'
-        iop.constructor += s
+    micro2iop = InstObjParams(name + 'Micro2',
+        Name + 'Micro2',
+        'SpMMMicroInst',
+        {'memacc_code': memacc_code,
+        'ea_code': ea2_code},
+        inst_flags)
 
-    header_output   = LDPRFDeclare.subst(iop)
-    decoder_output  = LDPRFConstructor.subst(iop)
+    header_output   = (LDPRFMacroDeclare.subst(iop) +
+                      LDPRFMicro1Declare.subst(micro1iop) +
+                      LDPRFMicro2Declare.subst(micro2iop))
+    decoder_output  = (LDPRFMacroConstructor.subst(iop) +
+                      LDPRFMicro1Constructor.subst(micro1iop) +
+                      LDPRFMicro2Constructor.subst(micro2iop))
     decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
-    exec_output     = (LDPRFExecute.subst(iop) +
-        LDPRFInitiateAcc.subst(iop) +
-        LDPRFCompleteAcc.subst(iop))
-
+    exec_output     = (LDPRFMicro1Execute.subst(micro1iop) +
+                      LDPRFMicro1InitiateAcc.subst(micro1iop) +
+                      LDPRFMicro1CompleteAcc.subst(micro1iop) +
+                      LDPRFMicro2Execute.subst(micro2iop) +
+                      LDPRFMicro2InitiateAcc.subst(micro2iop) +
+                      LDPRFMicro2CompleteAcc.subst(micro2iop))
 }};
 
 def format VSMULOp(code, *flags) {{

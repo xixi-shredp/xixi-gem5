@@ -24,5 +24,21 @@ std::string SpMMInst::generateDisassembly(Addr pc,
     return ss.str();
 }
 
+std::string SpMMMacroInst::generateDisassembly(Addr pc,
+        const loader::SymbolTable *symtab) const
+{
+    std::stringstream ss;
+    ss << mnemonic;
+    return ss.str();
+}
+
+std::string SpMMMicroInst::generateDisassembly(Addr pc,
+        const loader::SymbolTable *symtab) const
+{
+    std::stringstream ss;
+    ss << mnemonic;
+    return ss.str();
+}
+
 } // namespace RiscvISA
 } // namespace gem5
