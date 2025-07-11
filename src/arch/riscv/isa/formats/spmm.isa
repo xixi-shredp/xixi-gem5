@@ -124,7 +124,11 @@ def format MERGEOp(code, *flags) {{
 }};
 
 def format STRESOp(
-    ea_code,
+    memacc_code,
+    ea_code={{
+        EA = Rd;
+        index = Rs1;
+    }},
     mem_flags=[],
     inst_flags=[]
 ) {{
@@ -132,7 +136,9 @@ def format STRESOp(
     inst_flags = makeList(inst_flags)
 
     iop = InstObjParams(name, Name, 'SpMMInst',
-        {'ea_code': ea_code}, inst_flags)
+        { 'memacc_code': memacc_code,
+          'ea_code': ea_code
+        }, inst_flags)
 
     if mem_flags:
         mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]

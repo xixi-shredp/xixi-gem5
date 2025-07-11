@@ -1015,9 +1015,8 @@ decode QUADRANT default Unknown::unknown() {
                 index_d = Rd;
             }}, SpMMMERGEOp);
             0x6: STRESOp::STRES({{
-                EA = Rd;
-                index = Rs1;
-            }}, SpMMSTRESOp);
+                Mem_svc.as<uint8_t>()[i] = b_data[i];
+            }}, inst_flags=SpMMSTRESOp);
         }
 
         0x03: decode FUNCT3 {

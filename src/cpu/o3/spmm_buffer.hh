@@ -2,6 +2,7 @@
 #define __CPU_O3_SPMM_BUFFER_HH__
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace gem5
@@ -36,6 +37,9 @@ class SpMMBuffer
 
     /** actual buffer storage. */
     std::vector<uint8_t*> storage;
+
+  private:
+    std::string get_string(uint8_t* data);
 };
 
 } // namespace o3
