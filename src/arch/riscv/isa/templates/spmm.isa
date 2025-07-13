@@ -6,7 +6,8 @@ private:
     RegId srcRegIdxArr[2];
     RegId destRegIdxArr[2];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                   uint32_t _vlen, bool en);
     Fault execute(ExecContext *, trace::InstRecord *) const override;
     Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
     Fault completeAcc(PacketPtr, ExecContext *,
@@ -17,14 +18,14 @@ public:
 }};
 
 def template SpMMMemBaseDecodeBlock {{
-    return new %(class_name)s(machInst, spmm_elen, spmm_vlen);
+    return new %(class_name)s(machInst, spmm_elen, spmm_vlen, enableSpMM);
 }};
 
 def template LDVALIDXConstructor {{
 
 %(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
-                               uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+                               uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     this->setDelayedCommit();
     this->setFlag(IsLoad);
@@ -132,7 +133,8 @@ private:
     RegId destRegIdxArr[1];
     uint16_t imm;
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                    uint32_t _vlen, bool en);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
     using %(base_class)s::generateDisassembly;
 };
@@ -140,15 +142,16 @@ public:
 }};
 
 def template SpMMDecodeBlock {{
-  return new %(class_name)s<uint16_t>(machInst, spmm_elen, spmm_vlen);
+  return new %(class_name)s<uint16_t>(machInst, spmm_elen,
+                                        spmm_vlen, enableSpMM);
 }};
 
 def template SpMMVSMVConstructor {{
 
 template<typename ElemType>
 %(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
-                                         uint32_t _elen, uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+        uint32_t _elen, uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
@@ -194,7 +197,8 @@ private:
     // RegId srcRegIdxArr[2];
     // RegId destRegIdxArr[1];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+        uint32_t _vlen, bool en);
     using %(base_class)s::generateDisassembly;
 };
 
@@ -203,14 +207,14 @@ public:
 def template LDPRFMacroConstructor {{
 
 %(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
-                               uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+                               uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     %(set_reg_idx_arr)s;
     %(constructor)s;
 
-    this->microops.push_back(new LDPRFMicro1(_machInst, elen, vlen));
-    this->microops.push_back(new LDPRFMicro2(_machInst, elen, vlen));
+    this->microops.push_back(new LDPRFMicro1(_machInst, elen, vlen, en));
+    this->microops.push_back(new LDPRFMicro2(_machInst, elen, vlen, en));
 
     this->microops.front()->setFirstMicroop();
     this->microops.back()->setLastMicroop();
@@ -226,7 +230,8 @@ private:
     RegId srcRegIdxArr[1];
     RegId destRegIdxArr[1];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+        uint32_t _vlen, bool en);
     Fault execute(ExecContext *, trace::InstRecord *) const override;
     Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
     Fault completeAcc(PacketPtr, ExecContext *,
@@ -239,8 +244,8 @@ public:
 def template LDPRFMicro1Constructor {{
 
 %(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
-                               uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+                               uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     this->setDelayedCommit();
     this->setFlag(IsLoad);
@@ -339,7 +344,8 @@ private:
     RegId srcRegIdxArr[1];
     RegId destRegIdxArr[0];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+        uint32_t _vlen, bool en);
     Fault execute(ExecContext *, trace::InstRecord *) const override;
     Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
     Fault completeAcc(PacketPtr, ExecContext *,
@@ -352,8 +358,8 @@ public:
 def template LDPRFMicro2Constructor {{
 
 %(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
-                               uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+                               uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     this->setDelayedCommit();
     this->setFlag(IsLoad);
@@ -431,7 +437,8 @@ private:
     RegId destRegIdxArr[1];
     uint16_t imm;
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+        uint32_t _vlen, bool en);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
     using %(base_class)s::generateDisassembly;
 };
@@ -442,8 +449,8 @@ def template SpMMVSMULConstructor {{
 
 template<typename ElemType>
 %(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
-                                         uint32_t _elen, uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+        uint32_t _elen, uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
@@ -496,7 +503,8 @@ private:
     RegId srcRegIdxArr[2];
     RegId destRegIdxArr[0];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+        uint32_t _vlen, bool en);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
     using %(base_class)s::generateDisassembly;
 };
@@ -507,8 +515,8 @@ def template SpMMSTPSConstructor {{
 
 template<typename ElemType>
 %(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
-                                         uint32_t _elen, uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+            uint32_t _elen, uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
@@ -558,7 +566,8 @@ private:
     RegId srcRegIdxArr[3];
     RegId destRegIdxArr[0];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+        uint32_t _vlen, bool en);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
     using %(base_class)s::generateDisassembly;
 };
@@ -569,8 +578,8 @@ def template SpMMMERGEConstructor {{
 
 template<typename ElemType>
 %(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
-                                         uint32_t _elen, uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+                uint32_t _elen, uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
@@ -635,7 +644,8 @@ private:
     RegId srcRegIdxArr[2];
     RegId destRegIdxArr[0];
 public:
-    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                    uint32_t _vlen, bool en);
     Fault execute(ExecContext *, trace::InstRecord *) const override;
     Fault initiateAcc(ExecContext *, trace::InstRecord *) const override;
     Fault completeAcc(PacketPtr, ExecContext *,
@@ -648,8 +658,8 @@ public:
 def template STRESConstructor {{
 
 %(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
-                               uint32_t _vlen)
-    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen)
+                               uint32_t _vlen, bool en)
+    : %(base_class)s("%(mnemonic)s", _machInst, %(op_class)s, _elen, _vlen, en)
 {
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;

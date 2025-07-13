@@ -282,11 +282,15 @@ ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
     inform("RVV enabled, VLEN = %d bits, ELEN = %d bits",
             p.vlen, p.elen);
 
-    fatal_if( p.spmm_vlen < p.spmm_elen,
-    "SpMM_Vlen should be greater or equal than SpMM_Elen.");
+    if (enableSpMM){
+        fatal_if( p.spmm_vlen < p.spmm_elen,
+        "SpMM_Vlen should be greater or equal than SpMM_Elen.");
 
-    inform("SpMM enabled, SpMM_Vlen = %d bits, SpMM_Elen = %d bits",
-            p.spmm_vlen, p.spmm_elen);
+        inform("SpMM enabled, SpMM_Vlen = %d bits, SpMM_Elen = %d bits",
+                p.spmm_vlen, p.spmm_elen);
+    } else {
+        inform("SpMM disabled");
+    }
 
     miscRegFile.resize(NUM_PHYS_MISCREGS);
     clear();

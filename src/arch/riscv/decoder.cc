@@ -46,6 +46,7 @@ Decoder::Decoder(const RiscvDecoderParams &p) : InstDecoder(p, &machInst)
     elen = isa->getVecElemLenInBits();
     spmm_vlen = isa->getSpMMVecLenInBits();
     spmm_elen = isa->getSpMMVecElemLenInBits();
+    enableSpMM = isa->getEnableSpMM();
     _enableZcd = isa->enableZcd();
     reset();
 }

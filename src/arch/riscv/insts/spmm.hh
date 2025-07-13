@@ -27,13 +27,14 @@ class SpMMInst : public RiscvStaticInst
     uint32_t elen;
     uint32_t vlen;
 
-    SpMMInst(const char *mnem, ExtMachInst _machInst,
-                   OpClass __opClass, uint32_t _elen, uint32_t _vlen) :
+    SpMMInst(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
+            uint32_t _elen, uint32_t _vlen, bool en) :
             RiscvStaticInst(mnem, _machInst, __opClass),
             elen(_elen),
             vlen(_vlen)
     {
-        // this->flags[IsVector] = true;
+        if (!en)
+            panic("SpMM Extension is not enabled!\n");
     }
 
     ~SpMMInst() { }
@@ -52,12 +53,13 @@ class SpMMMacroInst : public RiscvMacroInst
     uint32_t vlen;
 
     SpMMMacroInst(const char* mnem, ExtMachInst _machInst,
-                   OpClass __opClass, uint32_t _elen, uint32_t _vlen)
+                   OpClass __opClass, uint32_t _elen, uint32_t _vlen, bool en)
         : RiscvMacroInst(mnem, _machInst, __opClass),
         elen(_elen),
         vlen(_vlen)
     {
-        // this->flags[IsVector] = true;
+        if (!en)
+            panic("SpMM Extension is not enabled!\n");
     }
     std::string generateDisassembly(
             Addr pc, const loader::SymbolTable *symtab) const override;
@@ -74,11 +76,12 @@ protected:
     Request::Flags memAccessFlags;
 
     SpMMMicroInst(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
-        uint32_t _elen, uint32_t _vlen)
+        uint32_t _elen, uint32_t _vlen, bool en)
         : RiscvMicroInst(mnem, _machInst, __opClass),
         elen(_elen), vlen(_vlen), memAccessFlags(0)
     {
-        // this->flags[IsVector] = true;
+        if (!en)
+            panic("SpMM Extension is not enabled!\n");
     }
     std::string generateDisassembly(
             Addr pc, const loader::SymbolTable *symtab) const override;
