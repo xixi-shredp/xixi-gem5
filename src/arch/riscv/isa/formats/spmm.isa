@@ -1,3 +1,15 @@
+let {{
+    def declareSpMMTemplate(
+        class_name, type_name='int', min_size=8, max_size=64):
+        sizes = [8, 16, 32, 64]
+        code = ''
+        for size in sizes:
+            if size < min_size or size > max_size:
+                continue
+            code += f'template class {class_name}<{type_name}{size}_t>;\n'
+        return code
+}};
+
 def format LDVALIDXOp(
     memacc_code,
     ea_code={{
@@ -11,8 +23,9 @@ def format LDVALIDXOp(
 
     iop = InstObjParams(name, Name, 'SpMMInst',
         {'ea_code': ea_code,
-         'memacc_code': memacc_code},
-        inst_flags)
+         'memacc_code': memacc_code,
+         'declare_spmm_template': declareSpMMTemplate(Name)},
+         inst_flags)
 
     if mem_flags:
         mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]
@@ -22,7 +35,7 @@ def format LDVALIDXOp(
 
     header_output   = SpMMMemDeclare.subst(iop)
     decoder_output  = LDVALIDXConstructor.subst(iop)
-    decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
     exec_output     = (LDVALIDXExecute.subst(iop) +
         LDVALIDXInitiateAcc.subst(iop) +
         LDVALIDXCompleteAcc.subst(iop))
@@ -32,7 +45,9 @@ def format LDVALIDXOp(
 def format VSMVOp(code, *flags) {{
 
     iop = InstObjParams(name, Name, 'SpMMInst',
-        {'code': code, 'imm_code': 'imm = IMM7 & (vlen-1);'}, flags)
+        {'code': code, 'imm_code': 'imm = IMM7 & (vlen-1);',
+         'declare_spmm_template': declareSpMMTemplate(Name)},
+         flags)
 
     header_output   = SpMMVSMVDeclare.subst(iop)
     decoder_output  = SpMMVSMVConstructor.subst(iop)
@@ -55,21 +70,28 @@ def format LDPRFOp(
     mem_flags = makeList(mem_flags)
     inst_flags = makeList(inst_flags)
 
-    iop = InstObjParams(name + 'Macro', Name + 'Macro', 'SpMMMacroInst',
-        { }, inst_flags)
+    iop = InstObjParams(
+        name + 'Macro',
+        Name + 'Macro',
+        'SpMMMacroInst',
+        {
+          'declare_spmm_template': declareSpMMTemplate(Name+'Macro')
+        }, inst_flags)
 
     micro1iop = InstObjParams(name + 'Micro1',
         Name + 'Micro1',
         'SpMMMicroInst',
         {'memacc_code': memacc_code,
-         'ea_code': ea1_code},
+         'ea_code': ea1_code,
+         'declare_spmm_template': declareSpMMTemplate(Name + 'Micro1')},
         inst_flags)
 
     micro2iop = InstObjParams(name + 'Micro2',
         Name + 'Micro2',
         'SpMMMicroInst',
         {'memacc_code': memacc_code,
-        'ea_code': ea2_code},
+         'ea_code': ea2_code,
+         'declare_spmm_template': declareSpMMTemplate(Name + 'Micro2')},
         inst_flags)
 
     header_output   = (LDPRFMacroDeclare.subst(iop) +
@@ -78,7 +100,7 @@ def format LDPRFOp(
     decoder_output  = (LDPRFMacroConstructor.subst(iop) +
                       LDPRFMicro1Constructor.subst(micro1iop) +
                       LDPRFMicro2Constructor.subst(micro2iop))
-    decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
     exec_output     = (LDPRFMicro1Execute.subst(micro1iop) +
                       LDPRFMicro1InitiateAcc.subst(micro1iop) +
                       LDPRFMicro1CompleteAcc.subst(micro1iop) +
@@ -90,7 +112,9 @@ def format LDPRFOp(
 def format VSMULOp(code, *flags) {{
 
     iop = InstObjParams(name, Name, 'SpMMInst',
-        {'code': code, 'imm_code': 'imm = IMM7 & (vlen-1);'}, flags)
+        {'code': code, 'imm_code': 'imm = IMM7 & (vlen-1);',
+         'declare_spmm_template': declareSpMMTemplate(Name)},
+         flags)
 
     header_output   = SpMMVSMULDeclare.subst(iop)
     decoder_output  = SpMMVSMULConstructor.subst(iop)
@@ -102,7 +126,9 @@ def format VSMULOp(code, *flags) {{
 def format STPSOp(code, *flags) {{
 
     iop = InstObjParams(name, Name, 'SpMMInst',
-        {'code': code}, flags)
+        {'code': code,
+         'declare_spmm_template': declareSpMMTemplate(Name)},
+         flags)
 
     header_output   = SpMMSTPSDeclare.subst(iop)
     decoder_output  = SpMMSTPSConstructor.subst(iop)
@@ -114,7 +140,9 @@ def format STPSOp(code, *flags) {{
 def format MERGEOp(code, *flags) {{
 
     iop = InstObjParams(name, Name, 'SpMMInst',
-        {'code': code}, flags)
+        {'code': code,
+         'declare_spmm_template': declareSpMMTemplate(Name)},
+         flags)
 
     header_output   = SpMMMERGEDeclare.subst(iop)
     decoder_output  = SpMMMERGEConstructor.subst(iop)
@@ -137,8 +165,9 @@ def format STRESOp(
 
     iop = InstObjParams(name, Name, 'SpMMInst',
         { 'memacc_code': memacc_code,
-          'ea_code': ea_code
-        }, inst_flags)
+          'ea_code': ea_code,
+          'declare_spmm_template': declareSpMMTemplate(Name)},
+          inst_flags)
 
     if mem_flags:
         mem_flags = [ 'Request::%s' % flag for flag in mem_flags ]
@@ -147,7 +176,7 @@ def format STRESOp(
 
     header_output   = STRESDeclare.subst(iop)
     decoder_output  = STRESConstructor.subst(iop)
-    decode_block    = SpMMMemBaseDecodeBlock.subst(iop)
+    decode_block    = SpMMDecodeBlock.subst(iop)
     exec_output     = (STRESExecute.subst(iop) +
         STRESInitiateAcc.subst(iop) +
         STRESCompleteAcc.subst(iop))

@@ -66,6 +66,7 @@ class Decoder : public InstDecoder
 
     uint32_t spmm_vlen;
     uint32_t spmm_elen;
+    bool spmm_fp;
     bool enableSpMM;
 
     virtual StaticInstPtr decodeInst(ExtMachInst mach_inst);

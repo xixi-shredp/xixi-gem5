@@ -138,9 +138,10 @@ class RiscvISA(BaseISA):
         "Length of each vector register in bits. (for SpMM)",
     )
     spmm_elen = Param.RiscvSpMMVectorElementLength(
-        16,
+        8,
         "Length of each vector element register in bits. (for SpMM)",
     )
+    spmm_fp = Param.Bool(False, "Use Floatpoint in SpMM.")
     privilege_mode_set = Param.PrivilegeModeSet(
         "MSU",
         "The combination of privilege modes \

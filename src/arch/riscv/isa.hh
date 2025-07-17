@@ -103,6 +103,10 @@ class ISA : public BaseISA
     */
     unsigned spmm_elen;
 
+    /** Use floatpoint in SpMM.
+    */
+    bool spmm_fp;
+
     /** The combination of privilege modes
      *  in Privilege Levels section of RISC-V privileged spec
      */
@@ -200,6 +204,7 @@ class ISA : public BaseISA
     unsigned getSpMMVecLenInBits() { return spmm_vlen; }
     unsigned getSpMMVecLenInBytes() { return spmm_vlen >> 3; }
     unsigned getSpMMVecElemLenInBits() { return spmm_elen; }
+    unsigned getSpMMFloatPoint() { return spmm_fp; }
 
     int64_t
     getSpMMVectorLengthInBytes() const override

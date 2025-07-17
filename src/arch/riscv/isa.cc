@@ -262,7 +262,7 @@ RegClass ccRegClass(CCRegClass, CCRegClassName, 0, debug::IntRegs);
 ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
     _rvType(p.riscv_type), enableRvv(p.enable_rvv), enableSpMM(p.enable_spmm),
     vlen(p.vlen), elen(p.elen), spmm_vlen(p.spmm_vlen), spmm_elen(p.spmm_elen),
-    _privilegeModeSet(p.privilege_mode_set),
+    spmm_fp(p.spmm_fp), _privilegeModeSet(p.privilege_mode_set),
     _wfiResumeOnPending(p.wfi_resume_on_pending), _enableZcd(p.enable_Zcd)
 {
     _regClasses.push_back(&intRegClass);
@@ -286,8 +286,8 @@ ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
         fatal_if( p.spmm_vlen < p.spmm_elen,
         "SpMM_Vlen should be greater or equal than SpMM_Elen.");
 
-        inform("SpMM enabled, SpMM_Vlen = %d bits, SpMM_Elen = %d bits",
-                p.spmm_vlen, p.spmm_elen);
+        inform("SpMM enabled, SpMM_Vlen = %d bits, SpMM_Elen = %d bits (%s)",
+                p.spmm_vlen, p.spmm_elen, p.spmm_fp ? "fp" : "int");
     } else {
         inform("SpMM disabled");
     }

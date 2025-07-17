@@ -9,6 +9,7 @@
 #include "arch/riscv/utility.hh"
 #include "cpu/exec_context.hh"
 #include "cpu/static_inst.hh"
+#include "softfloat_types.h"
 
 namespace gem5
 {
@@ -28,13 +29,11 @@ class SpMMInst : public RiscvStaticInst
     uint32_t vlen;
 
     SpMMInst(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
-            uint32_t _elen, uint32_t _vlen, bool en) :
+            uint32_t _elen, uint32_t _vlen) :
             RiscvStaticInst(mnem, _machInst, __opClass),
             elen(_elen),
             vlen(_vlen)
     {
-        if (!en)
-            panic("SpMM Extension is not enabled!\n");
     }
 
     ~SpMMInst() { }
@@ -53,13 +52,11 @@ class SpMMMacroInst : public RiscvMacroInst
     uint32_t vlen;
 
     SpMMMacroInst(const char* mnem, ExtMachInst _machInst,
-                   OpClass __opClass, uint32_t _elen, uint32_t _vlen, bool en)
+                   OpClass __opClass, uint32_t _elen, uint32_t _vlen)
         : RiscvMacroInst(mnem, _machInst, __opClass),
         elen(_elen),
         vlen(_vlen)
     {
-        if (!en)
-            panic("SpMM Extension is not enabled!\n");
     }
     std::string generateDisassembly(
             Addr pc, const loader::SymbolTable *symtab) const override;
@@ -76,12 +73,10 @@ protected:
     Request::Flags memAccessFlags;
 
     SpMMMicroInst(const char *mnem, ExtMachInst _machInst, OpClass __opClass,
-        uint32_t _elen, uint32_t _vlen, bool en)
+        uint32_t _elen, uint32_t _vlen)
         : RiscvMicroInst(mnem, _machInst, __opClass),
         elen(_elen), vlen(_vlen), memAccessFlags(0)
     {
-        if (!en)
-            panic("SpMM Extension is not enabled!\n");
     }
     std::string generateDisassembly(
             Addr pc, const loader::SymbolTable *symtab) const override;

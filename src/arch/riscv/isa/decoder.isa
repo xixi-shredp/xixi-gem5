@@ -993,17 +993,17 @@ decode QUADRANT default Unknown::unknown() {
 
         0x02: decode FUNCT3 {
             0x0: LDVALIDXOp::LDVALIDX({{
-                SVd1_uh[i] = Mem_svc.as<uint16_t>()[i*2];
-                SVd2_uh[i] = Mem_svc.as<uint16_t>()[i*2+1];
+                SVd1_vi[i] = Mem_svc.as<ElemType>()[i*2];
+                SVd2_vi[i] = Mem_svc.as<ElemType>()[i*2+1];
             }}, inst_flags=SpMMLDVALIDXOp);
             0x1: VSMVOp::VSMV({{
-                Rd_uh = SVs1_uh[imm];
+                Rd = SVs1_vi[imm];
             }}, SpMMVSMVOp);
             0x2: LDPRFOp::LDPRF({{
-                SVd_uh[i] = Mem_svc.as<uint16_t>()[i];
+                SVd_vi[i] = Mem_svc.as<ElemType>()[i];
             }}, inst_flags=SpMMLDPRFOp);
             0x3: VSMULOp::VSMUL({{
-                SVd_uh[i] = SVs1_uh[imm] * SVs2_uh[i];
+                SVd_vi[i] = SVs1_vi[imm] * SVs2_vi[i];
             }}, SpMMVSMULOp);
             0x4: STPSOp::STPS({{
                 data = SVs1_svc->as<uint8_t>();
