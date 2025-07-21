@@ -1,4 +1,25 @@
-def template SpMMMemDeclare {{
+def template SpMMDecodeBlock {{
+    if (!enableSpMM)
+        panic("SpMM Extension is not enabled!\n");
+
+    if (spmm_fp){
+        switch (spmm_elen) {
+            case 8:
+                return new %(class_name)s<float8_t>(machInst, spmm_vlen);
+            case 16:
+                return new %(class_name)s<float16_t>(machInst, spmm_vlen);
+            case 32:
+                return new %(class_name)s<float32_t>(machInst, spmm_vlen);
+            case 64:
+                return new %(class_name)s<float64_t>(machInst, spmm_vlen);
+        }
+    }
+    else {
+        panic("SpMM Int can not be supported now!\n");
+    }
+}};
+
+def template LDVALIDXDeclare {{
 
 template<typename ElemType>
 class %(class_name)s : public %(base_class)s
@@ -28,7 +49,7 @@ def template LDVALIDXConstructor {{
 template<typename ElemType>
 %(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst, uint32_t _vlen)
     : %(base_class)s("%(mnemonic)s", _machInst,
-        %(op_class)s, 8*sizeof(ElemType), _vlen)
+        %(op_class)s, 8 * sizeof(ElemType), _vlen)
 {
     this->setDelayedCommit();
     this->setFlag(IsLoad);
@@ -54,15 +75,13 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext *xc,
     trace::InstRecord *traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     Addr EA;
     %(op_decl)s;
     %(op_rd)s;
     %(ea_code)s;
 
     uint32_t mem_size = (vlen >> 3) * 2;
+    uint32_t e_byte = elen >> 3;
     uint32_t e_num = vlen / elen;
 
     const std::vector<bool> byte_enable(mem_size, true);
@@ -73,7 +92,9 @@ Fault
         return fault;
 
     for (size_t i = 0; i < e_num; i++) {
-        %(memacc_code)s;
+        for (size_t j = 0; j < e_byte; j++){
+            %(memacc_code)s;
+        }
     }
 
     %(op_wb)s;
@@ -115,9 +136,6 @@ Fault
 %(class_name)s<ElemType>::completeAcc(PacketPtr pkt, ExecContext *xc,
                             trace::InstRecord *traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     %(op_decl)s;
     %(op_rd)s;
 
@@ -127,8 +145,12 @@ Fault
 
 
     uint32_t e_num = vlen / elen;
+    uint32_t e_byte = elen >> 3;
+
     for (size_t i = 0; i < e_num; i++) {
-        %(memacc_code)s;
+        for (size_t j = 0; j < e_byte; j++){
+            %(memacc_code)s;
+        }
     }
 
     %(op_wb)s;
@@ -136,8 +158,6 @@ Fault
 }
 
 }};
-
-
 
 def template SpMMVSMVDeclare {{
 
@@ -156,27 +176,6 @@ public:
 
 }};
 
-def template SpMMDecodeBlock {{
-    if (!enableSpMM)
-        panic("SpMM Extension is not enabled!\n");
-
-    if (spmm_fp){
-        panic("SpMM Floatpoint is not supported now!\n");
-    }
-    else {
-        switch (spmm_elen) {
-            case 8:
-                return new %(class_name)s<int8_t>(machInst, spmm_vlen);
-            case 16:
-                return new %(class_name)s<int16_t>(machInst, spmm_vlen);
-            case 32:
-                return new %(class_name)s<int32_t>(machInst, spmm_vlen);
-            case 64:
-                return new %(class_name)s<int64_t>(machInst, spmm_vlen);
-        }
-    }
-}};
-
 def template SpMMVSMVConstructor {{
 
 template<typename ElemType>
@@ -187,8 +186,8 @@ template<typename ElemType>
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
     _numDestRegs = 0;
-    setDestRegIdx(_numDestRegs++, intRegClass[_machInst.rd]);
-    _numTypedDestRegs[IntRegClass]++;
+    setDestRegIdx(_numDestRegs++, floatRegClass[_machInst.rd]);
+    _numTypedDestRegs[FloatRegClass]++;
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
     %(imm_code)s;
 }
@@ -204,8 +203,8 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext* xc,
                                   trace::InstRecord* traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+    using et = ElemType;
+    using vu = decltype(et::v);
 
     %(op_decl)s;
     %(op_rd)s;
@@ -226,8 +225,6 @@ class %(class_name)s : public %(base_class)s
 {
 private:
     %(reg_idx_arr_decl)s;
-    // RegId srcRegIdxArr[2];
-    // RegId destRegIdxArr[1];
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _vlen);
     using %(base_class)s::generateDisassembly;
@@ -304,9 +301,6 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext *xc,
     trace::InstRecord *traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     Addr EA;
     %(op_decl)s;
     %(op_rd)s;
@@ -314,6 +308,7 @@ Fault
 
     uint32_t mem_size = vlen >> 3;
     uint32_t e_num = vlen / elen;
+    uint32_t e_byte = elen >> 3;
 
     const std::vector<bool> byte_enable(mem_size, true);
     Fault fault = xc->readMem(EA, Mem.as<uint8_t>(), mem_size, memAccessFlags,
@@ -323,7 +318,9 @@ Fault
         return fault;
 
     for (size_t i = 0; i < e_num; i++) {
-        %(memacc_code)s;
+        for (size_t j = 0; j < e_byte; j++) {
+            %(memacc_code)s;
+        }
     }
 
     %(op_wb)s;
@@ -364,9 +361,6 @@ Fault
 %(class_name)s<ElemType>::completeAcc(PacketPtr pkt, ExecContext *xc,
                             trace::InstRecord *traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     %(op_decl)s;
     %(op_rd)s;
 
@@ -375,8 +369,12 @@ Fault
     }
 
     uint32_t e_num = vlen / elen;
+    uint32_t e_byte = elen >> 3;
+
     for (size_t i = 0; i < e_num; i++) {
-        %(memacc_code)s;
+        for (size_t j = 0; j < e_byte; j++) {
+            %(memacc_code)s;
+        }
     }
 
     %(op_wb)s;
@@ -432,9 +430,6 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext *xc,
     trace::InstRecord *traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     Addr EA;
     %(op_decl)s;
     %(op_rd)s;
@@ -460,9 +455,6 @@ Fault
 %(class_name)s<ElemType>::initiateAcc(ExecContext* xc,
                             trace::InstRecord* traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     Addr EA;
 
     %(op_src_decl)s;
@@ -514,7 +506,7 @@ template<typename ElemType>
 %(class_name)s<ElemType>::%(class_name)s(ExtMachInst _machInst,
         uint32_t _vlen)
     : %(base_class)s("%(mnemonic)s", _machInst,
-            %(op_class)s, 8*sizeof(ElemType), _vlen)
+            %(op_class)s, 8 * sizeof(ElemType), _vlen)
 {
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
@@ -537,8 +529,8 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext* xc,
                                   trace::InstRecord* traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+    using et = ElemType;
+    using vu = decltype(et::v);
 
     %(op_decl)s;
     %(op_rd)s;
@@ -599,9 +591,6 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext* xc,
                                   trace::InstRecord* traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     %(op_decl)s;
     %(op_rd)s;
 
@@ -662,26 +651,28 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext* xc,
                                   trace::InstRecord* traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
+    using et = ElemType;
 
     %(op_decl)s;
     %(op_rd)s;
 
     uint32_t index0, index1, index_d;
-    ElemType* data0, *data1;
-    data0 = new ElemType[vlen / elen];
-    data1 = new ElemType[vlen / elen];
+    uint8_t* data0, *data1;
+    data0 = new uint8_t[vlen >> 3];
+    data1 = new uint8_t[vlen >> 3];
 
     %(code)s;
 
-    xc->readSpMMBuffer(index0, (uint8_t*)data0);
-    xc->readSpMMBuffer(index1, (uint8_t*)data1);
+    xc->readSpMMBuffer(index0, data0);
+    xc->readSpMMBuffer(index1, data1);
 
     uint32_t e_num = vlen / elen;
 
     for (size_t i = 0; i < e_num; i++) {
-        data0[i] += data1[i];
+        auto fd = fadd<et>(
+          ftype<et>(((et*)data0)[i]),
+                    ftype<et>(((et*)data1)[i]));
+        memcpy(data0 + i * sizeof(ElemType), &fd.v, sizeof(ElemType));
     }
 
     xc->writeSpMMBuffer(index_d, (uint8_t*)data0);
@@ -746,9 +737,6 @@ Fault
 %(class_name)s<ElemType>::execute(ExecContext *xc,
     trace::InstRecord *traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     Addr EA;
     uint32_t index;
     uint32_t mem_size = vlen >> 3;
@@ -789,9 +777,6 @@ Fault
 %(class_name)s<ElemType>::initiateAcc(ExecContext* xc,
                             trace::InstRecord* traceData) const
 {
-    using vu [[maybe_unused]] = std::make_unsigned_t<ElemType>;
-    using vi [[maybe_unused]] = std::make_signed_t<ElemType>;
-
     Addr EA;
     uint32_t index;
     uint32_t mem_size = vlen >> 3;

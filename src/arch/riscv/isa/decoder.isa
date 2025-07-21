@@ -993,20 +993,26 @@ decode QUADRANT default Unknown::unknown() {
 
         0x02: decode FUNCT3 {
             0x0: LDVALIDXOp::LDVALIDX({{
-                SVd1_vi[i] = Mem_svc.as<ElemType>()[i*2];
-                SVd2_vi[i] = Mem_svc.as<ElemType>()[i*2+1];
+                SVd1_ub[i * e_byte + j] =
+                    Mem_svc.as<uint8_t>()[i * 2 * e_byte + j];
+                SVd2_ub[i * e_byte + j] =
+                    Mem_svc.as<uint8_t>()[(i * 2 + 1) * e_byte + j];
             }}, inst_flags=SpMMLDVALIDXOp);
             0x1: VSMVOp::VSMV({{
-                Rd = SVs1_vi[imm];
+                auto fd = ftype<et>(SVs1_vu[imm]);
+                Fd_bits = fd.v;
             }}, SpMMVSMVOp);
             0x2: LDPRFOp::LDPRF({{
-                SVd_vi[i] = Mem_svc.as<ElemType>()[i];
+                SVd_ub[i * e_byte + j] =
+                    Mem_svc.as<uint8_t>()[i * e_byte + j];
             }}, inst_flags=SpMMLDPRFOp);
             0x3: VSMULOp::VSMUL({{
-                SVd_vi[i] = SVs1_vi[imm] * SVs2_vi[i];
+                auto res = fmul<et>(ftype<et>(SVs1_vu[imm]),
+                                    ftype<et>(SVs2_vu[i]));
+                SVd_vu[i] = res.v;
             }}, SpMMVSMULOp);
             0x4: STPSOp::STPS({{
-                data = SVs1_svc->as<uint8_t>();
+                data = SVs1_ub;
                 index = Rd;
             }}, SpMMSTPSOp);
             0x5: MERGEOp::MERGE({{

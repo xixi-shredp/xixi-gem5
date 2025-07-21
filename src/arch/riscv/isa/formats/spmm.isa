@@ -1,6 +1,6 @@
 let {{
     def declareSpMMTemplate(
-        class_name, type_name='int', min_size=8, max_size=64):
+        class_name, type_name='float', min_size=8, max_size=64):
         sizes = [8, 16, 32, 64]
         code = ''
         for size in sizes:
@@ -33,7 +33,7 @@ def format LDVALIDXOp(
         iop.constructor += s
 
 
-    header_output   = SpMMMemDeclare.subst(iop)
+    header_output   = LDVALIDXDeclare.subst(iop)
     decoder_output  = LDVALIDXConstructor.subst(iop)
     decode_block    = SpMMDecodeBlock.subst(iop)
     exec_output     = (LDVALIDXExecute.subst(iop) +
