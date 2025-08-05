@@ -999,7 +999,7 @@ decode QUADRANT default Unknown::unknown() {
                     Mem_svc.as<uint8_t>()[(i * 2 + 1) * e_byte + j];
             }}, inst_flags=SpMMLDVALIDXOp);
             0x1: VSMVOp::VSMV({{
-                auto fd = ftype<et>(SVs1_vu[imm]);
+                auto fd = ftype<et>(SVs1_vu[Rs3]);
                 Fd_bits = fd.v;
             }}, SpMMVSMVOp);
             0x2: LDPRFOp::LDPRF({{
@@ -1007,7 +1007,7 @@ decode QUADRANT default Unknown::unknown() {
                     Mem_svc.as<uint8_t>()[i * e_byte + j];
             }}, inst_flags=SpMMLDPRFOp);
             0x3: VSMULOp::VSMUL({{
-                auto res = fmul<et>(ftype<et>(SVs1_vu[imm]),
+                auto res = fmul<et>(ftype<et>(SVs1_vu[Rs3]),
                                     ftype<et>(SVs2_vu[i]));
                 SVd_vu[i] = res.v;
             }}, SpMMVSMULOp);

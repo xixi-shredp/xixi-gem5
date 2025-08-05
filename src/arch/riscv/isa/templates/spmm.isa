@@ -166,9 +166,8 @@ template<typename ElemType>
 class %(class_name)s : public %(base_class)s
 {
 private:
-    RegId srcRegIdxArr[1];
+    RegId srcRegIdxArr[2];
     RegId destRegIdxArr[1];
-    uint16_t imm;
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _vlen);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
@@ -190,7 +189,7 @@ template<typename ElemType>
     setDestRegIdx(_numDestRegs++, floatRegClass[_machInst.rd]);
     _numTypedDestRegs[FloatRegClass]++;
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
-    %(imm_code)s;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.fs3]);
     flags[IsFloating] = true;
 }
 
@@ -491,9 +490,8 @@ template<typename ElemType>
 class %(class_name)s : public %(base_class)s
 {
 private:
-    RegId srcRegIdxArr[2];
+    RegId srcRegIdxArr[3];
     RegId destRegIdxArr[1];
-    uint16_t imm;
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _vlen);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
@@ -517,7 +515,7 @@ template<typename ElemType>
     _numTypedDestRegs[SpMMRegClass]++;
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs2]);
-    %(imm_code)s;
+    setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.fs3]);
 }
 
 %(declare_spmm_template)s

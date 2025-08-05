@@ -101,6 +101,7 @@ def operands {{
     'Vs3': VecRegOp('vc', 'VS3', 'IsVector', 4),
 
 #SpMM Operand
+    'Rs3': IntReg('ud', 'FS3', 'IsInteger', 4),
     'SVd': SpMMRegOp('svc', 'RD',  None, 1),
     'SVs1': SpMMRegOp('svc', 'RS1', None, 2),
     'SVs2': SpMMRegOp('svc', 'RS2', None, 3),
