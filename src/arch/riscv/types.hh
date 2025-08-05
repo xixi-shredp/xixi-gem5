@@ -185,7 +185,7 @@ EndBitUnion(ExtMachInst)
 constexpr unsigned MaxVecLenInBits = 65536;
 constexpr unsigned MaxVecLenInBytes  = MaxVecLenInBits >> 3;
 
-constexpr unsigned MaxSpMMVecLenInBits = 256;
+constexpr unsigned MaxSpMMVecLenInBits = 1024;
 constexpr unsigned MaxSpMMVecLenInBytes  = MaxSpMMVecLenInBits >> 3;
 
 

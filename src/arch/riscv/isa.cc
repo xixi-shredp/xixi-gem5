@@ -48,6 +48,7 @@
 #include "arch/riscv/regs/misc.hh"
 #include "arch/riscv/regs/spmm.hh"
 #include "arch/riscv/regs/vector.hh"
+#include "arch/riscv/types.hh"
 #include "base/bitfield.hh"
 #include "base/compiler.hh"
 #include "base/logging.hh"
@@ -284,7 +285,11 @@ ISA::ISA(const Params &p) : BaseISA(p, "riscv"),
 
     if (enableSpMM){
         fatal_if( p.spmm_vlen < p.spmm_elen,
-        "SpMM_Vlen should be greater or equal than SpMM_Elen.");
+                 "SpMM_Vlen should be greater or equal than SpMM_Elen.");
+
+        fatal_if( p.spmm_vlen > MaxSpMMVecLenInBits / 2,
+                 "SpMM_Vlen should be less than MaxSpMMVecLenInBits/2 (%d).",
+                 MaxSpMMVecLenInBits/2);
 
         inform("SpMM enabled, SpMM_Vlen = %d bits, SpMM_Elen = %d bits (%s)",
                 p.spmm_vlen, p.spmm_elen, p.spmm_fp ? "fp" : "int");

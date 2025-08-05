@@ -144,6 +144,7 @@ Fault
     }
 
 
+
     uint32_t e_num = vlen / elen;
     uint32_t e_byte = elen >> 3;
 
@@ -190,6 +191,7 @@ template<typename ElemType>
     _numTypedDestRegs[FloatRegClass]++;
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
     %(imm_code)s;
+    flags[IsFloating] = true;
 }
 
 %(declare_spmm_template)s
@@ -652,33 +654,32 @@ Fault
                                   trace::InstRecord* traceData) const
 {
     using et = ElemType;
+    using vu = decltype(et::v);
 
     %(op_decl)s;
     %(op_rd)s;
 
     uint32_t index0, index1, index_d;
-    uint8_t* data0, *data1;
-    data0 = new uint8_t[vlen >> 3];
-    data1 = new uint8_t[vlen >> 3];
 
     %(code)s;
 
-    xc->readSpMMBuffer(index0, data0);
-    xc->readSpMMBuffer(index1, data1);
+    RiscvISAInst::SpMMRegContainer data0;
+    RiscvISAInst::SpMMRegContainer data1;
+    auto tmp0 = data0.as<vu>();
+    auto tmp1 = data1.as<vu>();
+
+    xc->readSpMMBuffer(index0, data0.as<uint8_t>());
+    xc->readSpMMBuffer(index1, data1.as<uint8_t>());
 
     uint32_t e_num = vlen / elen;
 
     for (size_t i = 0; i < e_num; i++) {
         auto fd = fadd<et>(
-          ftype<et>(((et*)data0)[i]),
-                    ftype<et>(((et*)data1)[i]));
-        memcpy(data0 + i * sizeof(ElemType), &fd.v, sizeof(ElemType));
+            ftype<et>(tmp0[i]), ftype<et>(tmp1[i]));
+        tmp0[i] = fd.v;
     }
 
-    xc->writeSpMMBuffer(index_d, (uint8_t*)data0);
-
-    delete [] data0;
-    delete [] data1;
+    xc->writeSpMMBuffer(index_d, data0.as<uint8_t>());
 
     %(op_wb)s;
 
