@@ -186,11 +186,10 @@ template<typename ElemType>
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
     _numDestRegs = 0;
-    setDestRegIdx(_numDestRegs++, floatRegClass[_machInst.rd]);
-    _numTypedDestRegs[FloatRegClass]++;
+    setDestRegIdx(_numDestRegs++, intRegClass[_machInst.rd]);
+    _numTypedDestRegs[IntRegClass]++;
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.fs3]);
-    flags[IsFloating] = true;
 }
 
 %(declare_spmm_template)s
