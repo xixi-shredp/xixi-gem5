@@ -557,7 +557,7 @@ class %(class_name)s : public %(base_class)s
 {
 private:
     RegId srcRegIdxArr[2];
-    RegId destRegIdxArr[0];
+    RegId destRegIdxArr[1];
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _vlen);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
@@ -576,6 +576,8 @@ template<typename ElemType>
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
     _numDestRegs = 0;
+    setDestRegIdx(_numDestRegs++, spmmRegClass[SpMMBufFlagReg]);
+    _numTypedDestRegs[SpMMRegClass]++;
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
     setSrcRegIdx(_numSrcRegs++, spmmRegClass[_machInst.rs1]);
 }
@@ -615,8 +617,8 @@ template<typename ElemType>
 class %(class_name)s : public %(base_class)s
 {
 private:
-    RegId srcRegIdxArr[3];
-    RegId destRegIdxArr[0];
+    RegId srcRegIdxArr[4];
+    RegId destRegIdxArr[1];
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _vlen);
     Fault execute(ExecContext* xc, trace::InstRecord* traceData)const override;
@@ -635,9 +637,12 @@ template<typename ElemType>
     %(set_reg_idx_arr)s;
     _numSrcRegs = 0;
     _numDestRegs = 0;
+    setDestRegIdx(_numDestRegs++, spmmRegClass[SpMMBufFlagReg]);
+    _numTypedDestRegs[SpMMRegClass]++;
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs1]);
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs2]);
+    setSrcRegIdx(_numSrcRegs++, spmmRegClass[SpMMBufFlagReg]);
 }
 
 %(declare_spmm_template)s
@@ -694,7 +699,7 @@ template<typename ElemType>
 class %(class_name)s : public %(base_class)s
 {
 private:
-    RegId srcRegIdxArr[2];
+    RegId srcRegIdxArr[3];
     RegId destRegIdxArr[0];
 public:
     %(class_name)s(ExtMachInst _machInst, uint32_t _vlen);
@@ -719,6 +724,7 @@ template<typename ElemType>
     _numDestRegs = 0;
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rd]);
     setSrcRegIdx(_numSrcRegs++, intRegClass[_machInst.rs1]);
+    setSrcRegIdx(_numSrcRegs++, spmmRegClass[SpMMBufFlagReg]);
 
     this->flags[IsStore] = true;
     this->setDelayedCommit();
