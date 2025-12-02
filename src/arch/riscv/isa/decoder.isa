@@ -2917,35 +2917,59 @@ decode QUADRANT default Unknown::unknown() {
                     }}, OPIVV, SimdAluOp);
                     // FHE Extension
                     0x3a: vaddmod_vv({{
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
                         __int128_t fhe_c = Vs2_vi[i] + Vs1_vi[i];
-                        Vd_vi[i] = fhe_c >= FHEMod ? fhe_c - FHEMod : fhe_c;
+                        if(!(mod_flags & 0x1))
+                          fhe_c = fhe_c >= FHEMod ? fhe_c - FHEMod : fhe_c;
+                        Vd_vi[i] = fhe_c;
                     }},OPIVV, SimdFHEModOp);
                     0x3b: vsubmod_vv({{
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
                         __int128_t fhe_c = Vs2_vi[i] - Vs1_vi[i];
-                        Vd_vi[i] = fhe_c < 0 ? fhe_c + FHEMod : fhe_c;
+                        if(!(mod_flags & 0x1))
+                          fhe_c = fhe_c < 0 ? fhe_c + FHEMod : fhe_c;
+                        Vd_vi[i] = fhe_c;
                     }},OPIVV, SimdFHEModOp);
                     0x3c: vmontredc_vv({{
-                        uint64_t T = Vs2_vu[i];
-                        uint64_t W = Vs1_vu[i];
-                        uint64_t q = FHEMod;
-                        uint64_t qInv = FHEPre;
-                        __uint128_t U = static_cast<__uint128_t>(T) * W;
-                        uint64_t U0 = static_cast<uint64_t>(U);
-                        uint64_t U1 = static_cast<uint64_t>(U >> 64);
-                        uint64_t Q = U0 * qInv;
-                        __uint128_t Hx = static_cast<__uint128_t>(Q) * q;
-                        uint64_t H = static_cast<uint64_t>(Hx >> 64);
-                        uint64_t V = U1 < H ? U1 + q - H : U1 - H;
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
+                        bool nocmp_out  = mod_flags & 0x1;
+                        bool signed_mul = mod_flags & 0x2;
+                        vu T = Vs2_vu[i];
+                        vu W = Vs1_vu[i];
+                        vu q = FHEMod;
+                        vu qInv = FHEPre;
+                        __uint128_t U;
+                        if(signed_mul)
+                          U = static_cast<__int128_t>((vi)T) * (vi)W;
+                        else
+                          U = static_cast<__uint128_t>(T) * W;
+                        vu U0 = U;
+                        vu U1 = U >> sew;
+                        vu Q = U0 * qInv;
+                        __uint128_t Hx;
+                        if(signed_mul){
+                          Hx = static_cast<__int128_t>((vi)Q) * (vi)q;
+                        }
+                        else{
+                          Hx = static_cast<__uint128_t>((vu)Q) * (vu)q;
+                        }
+                        vu H = Hx >> sew;
+                        vu V = U1 - H;
+                        if(!nocmp_out)
+                          V = U1 < H ? V + q: V;
                         Vd_vu[i] = V;
                     }},OPIVV, SimdFHEMontMulModOp);
                     0x3d: vbarmulmods_vv({{
-                        uint64_t fhe_p = FHEMod;
-                        uint64_t fhe_z1 = Vs3_vu[i] * Vs2_vu[i];
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
+                        vu fhe_p = FHEMod;
+                        vu fhe_z1 = Vs3_vu[i] * Vs2_vu[i];
                         __uint128_t fhe_mul1 = Vs3_vu[i];
-                        uint64_t fhe_t = (fhe_mul1 * Vs1_vu[i]) >> 64;
-                        uint64_t fhe_t1 = fhe_p * fhe_t;
-                        uint64_t fhe_z = fhe_z1 - fhe_t1;
-                        Vd_vu[i] = fhe_z > fhe_p ? (fhe_z - fhe_p) : fhe_z;
+                        vu fhe_t = (fhe_mul1 * Vs1_vu[i]) >> sew;
+                        vu fhe_t1 = fhe_p * fhe_t;
+                        vu fhe_z = fhe_z1 - fhe_t1;
+                        if(!(mod_flags & 0x1))
+                          fhe_z = fhe_z > fhe_p ? (fhe_z - fhe_p) : fhe_z;
+                        Vd_vu[i] = fhe_z;
                     }},OPIVV, SimdFHEBarMulModOp);
                 }
                 0x0c: VectorGatherFormat::vrgather_vv({{
@@ -4139,34 +4163,55 @@ decode QUADRANT default Unknown::unknown() {
                     }}, OPIVX, SimdAluOp);
                     // FHE Extension
                     0x38: vmod_vx({{
-                        uint64_t modular = RS1 == 0 ? FHEMod : Rs1_vu;
-                        Vd_vi[i] =
-                            Vs2_vi[i] < 0 ? Vs2_vi[i] + modular : Vs2_vi[i];
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
+                        vu modular = RS1 == 0 ? FHEMod : Rs1_vu;
+                        vu fhe_z = Vs2_vi[i];
+                        if(!(mod_flags & 0x1))
+                          fhe_z =
+                              Vs2_vi[i] < 0 ? Vs2_vi[i] + modular : Vs2_vi[i];
+                        Vd_vi[i] = fhe_z;
                     }},OPIVX, SimdFHEModOp);
                     0x3c: vmontredc_vx({{
-                        uint64_t T = Vs2_vu[i];
-                        uint64_t W = Rs1_vu;
-                        uint64_t q = FHEMod;
-                        uint64_t qInv = FHEPre;
-                        __uint128_t U = static_cast<__uint128_t>(T) * W;
-                        uint64_t U0 = static_cast<uint64_t>(U);
-                        uint64_t U1 = static_cast<uint64_t>(U >> 64);
-                        uint64_t Q = U0 * qInv;
-                        __uint128_t Hx = static_cast<__uint128_t>(Q) * q;
-                        uint64_t H = static_cast<uint64_t>(Hx >> 64);
-                        uint64_t V = U1 < H ? U1 + q - H : U1 - H;
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
+                        bool nocmp_out  = mod_flags & 0x1;
+                        bool signed_mul = mod_flags & 0x2;
+                        vu T = Vs2_vu[i];
+                        vu W = Rs1_vu;
+                        vu q = FHEMod;
+                        vu qInv = FHEPre;
+                        __uint128_t U;
+                        if(signed_mul)
+                          U = static_cast<__int128_t>((vi)T) * (vi)W;
+                        else
+                          U = static_cast<__uint128_t>(T) * W;
+                        vu U0 = U;
+                        vu U1 = U >> sew;
+                        vu Q = U0 * qInv;
+                        __uint128_t Hx;
+                        if(signed_mul)
+                          Hx = static_cast<__int128_t>((vi)Q) * (vi)q;
+                        else
+                          Hx = static_cast<__uint128_t>(Q) * q;
+                        vu H = Hx >> sew;
+                        vu V = U1 - H;
+                        if(!nocmp_out)
+                          V = U1 < H ? U1 + q - H : U1 - H;
                         Vd_vu[i] = V;
                     }},OPIVX, SimdFHEMontMulModOp);
                 }
                 // FHE Extension
                 0x3d: VectorVXXFormat::vbarmulmods_vxx({{
-                        uint64_t fhe_p = FHEMod;
-                        uint64_t fhe_z1 = Vs3_vu[i] * Rs1_vu;
+                        uint64_t mod_flags = xc->readMiscReg(MISCREG_MODFLAGS);
+                        bool nocmp_out  = mod_flags & 0x1;
+                        vu fhe_p = FHEMod;
+                        vu fhe_z1 = Vs3_vu[i] * Rs1_vu;
                         __uint128_t fhe_mul1 = Vs3_vu[i];
-                        uint64_t fhe_t = (fhe_mul1 * Rs2_vu) >> 64;
-                        uint64_t fhe_t1 = fhe_p * fhe_t;
-                        uint64_t fhe_z = fhe_z1 - fhe_t1;
-                        Vd_vu[i] = fhe_z > fhe_p ? (fhe_z - fhe_p) : fhe_z;
+                        vu fhe_t = (fhe_mul1 * Rs2_vu) >> sew;
+                        vu fhe_t1 = fhe_p * fhe_t;
+                        vu fhe_z = fhe_z1 - fhe_t1;
+                        if(!nocmp_out)
+                          fhe_z = fhe_z > fhe_p ? (fhe_z - fhe_p) : fhe_z;
+                        Vd_vu[i] = fhe_z;
                 }}, SimdFHEBarMulModOp);
                 0x0e: VectorSlideUpFormat::vslideup_vx({{
                     const int offset = (int)Rs1_vu;

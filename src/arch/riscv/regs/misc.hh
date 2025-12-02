@@ -247,6 +247,8 @@ enum MiscRegIndex
     MISCREG_HPMCOUNTER30H,
     MISCREG_HPMCOUNTER31H,
 
+    MISCREG_MODFLAGS,
+
     NUM_PHYS_MISCREGS,
 
     MISCREG_MSTATUS = MISCREG_STATUS,
@@ -510,7 +512,10 @@ enum CSRIndex
     CSR_VCSR         = 0x00F,
     CSR_VL           = 0xC20,
     CSR_VTYPE        = 0xC21,
-    CSR_VLENB        = 0xC22
+    CSR_VLENB        = 0xC22,
+
+    CSR_MODFLAGS     = 0x800
+
 };
 
 struct CSRMetadata
@@ -1181,7 +1186,11 @@ const std::unordered_map<int, CSRMetadata> CSRData = {
     {CSR_VTYPE,
         {"vtype", MISCREG_VTYPE, rvTypeFlags(RV64, RV32), isaExtsFlags('v')}},
     {CSR_VLENB,
-        {"VLENB", MISCREG_VLENB, rvTypeFlags(RV64, RV32), isaExtsFlags('v')}}
+        {"VLENB", MISCREG_VLENB, rvTypeFlags(RV64, RV32), isaExtsFlags('v')}},
+
+    {CSR_MODFLAGS,
+        {"MODFLAGS", MISCREG_MODFLAGS, rvTypeFlags(RV64, RV32),
+         isaExtsFlags()}}
 };
 
 /**
