@@ -30,6 +30,7 @@ Import('*')
 if not env['CONF']['USE_RISCV_ISA']:
     Return()
 
+Source('aabb.cc', tags=['riscv isa'])
 Source('amo.cc', tags=['riscv isa'])
 Source('bs.cc', tags=['riscv isa'])
 Source('compressed.cc', tags=['riscv isa'])

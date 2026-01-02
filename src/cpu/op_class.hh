@@ -54,6 +54,7 @@ using enums::OpClass;
 using enums::No_OpClass;
 
 static const OpClass IntAluOp = enums::IntAlu;
+static const OpClass BranchOp = enums::Branch;
 static const OpClass IntMultOp = enums::IntMult;
 static const OpClass IntDivOp = enums::IntDiv;
 static const OpClass FloatAddOp = enums::FloatAdd;
@@ -92,6 +93,15 @@ static const OpClass SimdFloatMatMultAccOp = enums::SimdFloatMatMultAcc;
 static const OpClass SimdFloatSqrtOp = enums::SimdFloatSqrt;
 static const OpClass SimdFloatReduceCmpOp = enums::SimdFloatReduceCmp;
 static const OpClass SimdFloatReduceAddOp = enums::SimdFloatReduceAdd;
+static const OpClass SimdFloatSegment3Op = enums::SimdFloatSegment3;
+static const OpClass SimdFloatSegment3ReduceCmpOp
+             = enums::SimdFloatSegment3ReduceCmp;
+static const OpClass SimdFloatSegment3SurfaceOp
+             = enums::SimdFloatSegment3Surface;
+static const OpClass SimdFloatSegment3MortonOp
+             = enums::SimdFloatSegment3Morton;
+static const OpClass SimdFloatReduceSahCostOp = enums::SimdFloatReduceSahCost;
+static const OpClass SimdFloatSegment3QuantOp = enums::SimdFloatSegment3Quant;
 static const OpClass SimdAesOp = enums::SimdAes;
 static const OpClass SimdAesMixOp = enums::SimdAesMix;
 static const OpClass SimdSha1HashOp = enums::SimdSha1Hash;

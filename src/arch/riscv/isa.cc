@@ -56,6 +56,7 @@
 #include "debug/LLSC.hh"
 #include "debug/MatRegs.hh"
 #include "debug/RiscvMisc.hh"
+#include "debug/SimdFloatSegment3.hh"
 #include "debug/VecRegs.hh"
 #include "mem/packet.hh"
 #include "mem/request.hh"

@@ -1,0 +1,240 @@
+let {{
+def setVlenb():
+        return "[[maybe_unused]] uint32_t vlenb = vlen >> 3;\n"
+
+def declareVfSeg3Template(class_name):
+    return f'''
+    template class {class_name}<uint8_t>;
+    template class {class_name}<uint16_t>;
+    template class {class_name}<uint32_t>;
+    template class {class_name}<uint64_t>;
+    '''
+
+def getFaultCode():
+    return '''
+    Addr fault_addr;
+    if (fault != NoFault && getFaultVAddr(fault, fault_addr)) {
+        assert(fault_addr >= EA);
+        faultIdx = (fault_addr - EA) / (width_EEW(machInst.width) / 8);
+        if (microIdx != 0 || faultIdx != 0) {
+            fault = NoFault;
+            trimVl = true;
+        }
+    }
+    '''
+
+def getTailMaskPolicyCode():
+    return '''
+    if (!machInst.vtype8.vta || (!machInst.vm && !machInst.vtype8.vma)) {
+        RiscvISA::vreg_t old_vd;
+        xc->getRegOperand(this, 1, &old_vd);
+        tmp_d0 = old_vd;
+    } else {
+        tmp_d0.set(0xff);
+    }
+    '''
+
+def loopWrapper(code, micro_inst = True):
+    if micro_inst:
+        upper_bound = "this->microVl"
+    else:
+        upper_bound = "(uint32_t)machInst.vl"
+    return '''
+        for (uint32_t i = 0; i < %s; i++) {
+            %s
+        }
+    ''' % (upper_bound, code)
+
+def fflags_wrapper(code):
+    return '''
+    std::feclearexcept(FE_ALL_EXCEPT);
+    ''' + code + '''
+    xc->setMiscReg(MISCREG_FFLAGS_EXE, softfloat_exceptionFlags);
+    softfloat_exceptionFlags = 0;
+    '''
+
+def getMergeMicroUsageCode(class_name, widening):
+    merge_ops = "num_microops"
+    u_vlmax = "micro_vlmax"
+    if widening:
+        merge_ops += "*2"
+        u_vlmax += "/2"
+
+    return '''
+    remaining_vl = this->vl;
+    auto t_micro_vlmax = %s;
+    micro_vl = std::min(remaining_vl, t_micro_vlmax);
+    auto merge_op_nums = %s;
+    for (int i = 0; i < merge_op_nums && micro_vl > 0; ++i) {
+        microop = new %sMergeMicro(_machInst, micro_vl, i,
+                                      merge_op_nums, NFIELDS,
+                                      elen, vlen);
+        microop->setDelayedCommit();
+        this->microops.push_back(microop);
+        micro_vl = std::min(remaining_vl -= t_micro_vlmax, t_micro_vlmax);
+    }
+    ''' % (u_vlmax, merge_ops, class_name)
+
+def VfSeg3Base(name, Name, code, merge_code, category, op_class,
+                   inst_flags, base_class,
+                   declare_template_base=VfSeg3BaseMacroDeclare,
+                   decode_template=VfSeg3BaseDecodeBlock,
+                   exec_template_base='',
+                   microop_template_base='',
+                   # If it's a macroop, the corresponding microops will be
+                   # generated.
+                   is_macroop=True):
+    # Make sure flags are in lists (convert to lists if not).
+    inst_flags = makeList(inst_flags)
+    is_widening_vd = "WideningVd" in inst_flags
+
+    if "NotUseLoop" not in inst_flags:
+      code = loopWrapper(code)
+
+    code = fflags_wrapper(code)
+    merge_code = loopWrapper(merge_code)
+
+    merge_code_ref = ""
+    if "FinalMerge" in inst_flags:
+        merge_code_ref = getMergeMicroUsageCode(Name, is_widening_vd)
+
+    iop = InstObjParams(name, Name, base_class,
+        {'code': code,
+         'merge_code_ref': merge_code_ref,
+         'declare_vfseg3_template': declareVfSeg3Template(Name)},
+        [op_class])
+
+    dest_idx = ""
+    src1_idx = ""
+    src2_idx = "_machInst.vs2 + _microIdx + (field * numMicroops)"
+    src3_idx = ""
+
+    src1_reg_id = ""
+    src3_reg_id = ""
+
+    set_src_reg_idx  = ""
+
+    if category == "OPFVV":
+        dest_idx = "_machInst.vd + _microIdx + (field * numMicroops)"
+        src1_idx = "_machInst.vs1 + _microIdx + (field * numMicroops)"
+        src1_reg_id = "vecRegClass[%s]" % src1_idx
+    elif category == "OPIVX":
+        dest_idx = "_machInst.vd + (field * numMicroops)"
+        src1_idx = "_machInst.rs1"
+        src1_reg_id = "intRegClass[%s]" % src1_idx
+        src3_idx = "_machInst.vs3 + (field * numMicroops)"
+        src3_reg_id = "vecRegClass[%s]" % src3_idx
+    else:
+        error("not supported category for VfSeg3Op: %s" % category)
+
+    if "FinalMerge" in inst_flags:
+        dest_idx = "VecMemInternalReg0 + _microIdx + (field * numMicroops)"
+
+    if "ScalarVs1" in inst_flags:
+        src1_idx = "_machInst.vs1 + (field * numMicroops)"
+        src1_reg_id = "vecRegClass[%s]" % src1_idx
+
+    dest_reg_id = "vecRegClass[%s]" % dest_idx
+    src2_reg_id = "vecRegClass[%s]" % src2_idx
+
+    set_src_reg_idx += setSrcWrapper(src1_reg_id)
+    set_src_reg_idx += setSrcWrapper(src2_reg_id)
+    if category == "OPIVX":
+        set_src_reg_idx += setSrcWrapper(src3_reg_id)
+    set_dest_reg_idx = setDestWrapper(dest_reg_id)
+
+    constructTemplate = eval(exec_template_base + 'Constructor')
+    if not microop_template_base:
+        microop_template_base = exec_template_base
+
+    header_output   = declare_template_base.subst(iop)
+    decoder_output  = constructTemplate.subst(iop)
+    decode_block    = decode_template.subst(iop)
+    exec_output     = ''
+    if not is_macroop:
+        return (header_output, decoder_output, decode_block, exec_output)
+
+    micro_class_name = microop_template_base + 'MicroInst'
+
+    microiop = InstObjParams(name + '_micro',
+        Name + 'Micro',
+        microop_template_base + 'MicroInst',
+        {'code': code,
+         'src1_idx': src1_idx,
+         'src2_idx': src2_idx,
+         'dest_idx': dest_idx,
+         'set_dest_reg_idx': set_dest_reg_idx,
+         'set_src_reg_idx': set_src_reg_idx,
+         'set_vlenb': setVlenb(),
+         'declare_vfseg3_template': declareVfSeg3Template(Name + 'Micro'),
+         'tail_mask_policy_code': getTailMaskPolicyCode()},
+        [op_class])
+
+    microDeclTemplate = eval(microop_template_base + 'Micro' + 'Declare')
+    microConsTemplate = eval(microop_template_base + 'Micro' + 'Constructor')
+    microExecTemplate = eval(microop_template_base + 'Micro' + 'Execute')
+
+    header_output     = microDeclTemplate.subst(microiop) + header_output
+    decoder_output    = microConsTemplate.subst(microiop) + decoder_output
+    micro_exec_output = microExecTemplate.subst(microiop)
+    exec_output      += micro_exec_output
+
+    if "FinalMerge" in inst_flags:
+        widening_vd = "0"
+        if is_widening_vd:
+          widening_vd = "1"
+
+        merge_micro_base_class = "VectorMicroInst"
+        merge_micro_iop = InstObjParams(name + '_merge_micro',
+            Name + 'MergeMicro',
+            merge_micro_base_class,
+            {'code': code,
+            'merge_code': merge_code,
+            'widening_vd': widening_vd,
+            'op_class' : op_class},
+            [op_class])
+        mergeMicroDeclTemplate = eval(microop_template_base +
+                                      'MergeMicroDeclare')
+        mergeMicroConsTemplate = eval(microop_template_base +
+                                      'MergeMicroConstructor')
+        mergeMicroExecTemplate = eval(microop_template_base +
+                                      'MergeMicroExecute')
+
+        header_output     += mergeMicroDeclTemplate.subst(merge_micro_iop)
+        decoder_output    += mergeMicroConsTemplate.subst(merge_micro_iop)
+        exec_output       += mergeMicroExecTemplate.subst(merge_micro_iop)
+
+    return (header_output, decoder_output, decode_block, exec_output)
+
+}};
+
+def format VfSeg3Op(
+    code, category, op_class, inst_flags=[]
+) {{
+    (header_output, decoder_output, decode_block, exec_output) = \
+        VfSeg3Base(name, Name, code, "", category, op_class, inst_flags,
+                 'VfSeg3MacroInst', exec_template_base='VfSeg3')
+}};
+
+def format VfSeg3MergeOp(
+    code, merge_code, category, op_class, inst_flags=[]
+) {{
+    inst_flags = makeList(inst_flags)
+    inst_flags.append("FinalMerge")
+    (header_output, decoder_output, decode_block, exec_output) = \
+        VfSeg3Base(name, Name, code, merge_code, category, op_class,
+                   inst_flags,
+                   'VfSeg3MacroInst', exec_template_base='VfSeg3')
+}};
+
+def format VfReduceSahcostOp() {{
+    op_class = "SimdFloatReduceSahCostOp"
+    iop = InstObjParams(name, Name, "VectorMacroInst", {
+        "op_class" : op_class,
+      }, [op_class])
+
+    header_output   = Vfred_sahcostMacroDeclare.subst(iop)
+    decoder_output  = Vfred_sahcostConstructor.subst(iop)
+    decode_block    = VfSeg3BaseDecodeBlock.subst(iop)
+    exec_output     = ''
+}};

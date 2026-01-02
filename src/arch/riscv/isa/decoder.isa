@@ -4008,6 +4008,96 @@ decode QUADRANT default Unknown::unknown() {
                                          ftype<et>(Vs1_vu[i]),
                                          false, true).v;
                 }}, OPFVV, SimdFloatCvtOp);
+                format VfSeg3Op {
+                    0x0b: vfseg3_centroid_vv({{
+                        auto fd = fadd<et>(ftype<et>(Vs2_vu[i]),
+                                          ftype<et>(Vs1_vu[i]));
+                        fd = fdiv<et>(fd, ui32_to_f32(2));
+                        Vd_vu[i] = fd.v;
+                    }}, OPFVV, SimdFloatSegment3Op);
+                    0x22: vfseg3_quant_vv({{
+                        auto g_min = ftype<et>(Vs1_vu[0]);
+                        auto g_max = ftype<et>(Vs1_vu[1]);
+                        auto src   = ftype<et>(Vs2_vu[i]);
+                        auto fd = quantize_into_box(src, g_max, g_min);
+                        Vd_vu[i] = fd.v;
+                        auto idx = microIdx * microVl + i;
+                        DPRINTFR(SimdFloatSegment3,
+                                  "%d : group_min %.2f group_max %.2f\n"
+                                  "%.2f -> %.2f\n",
+                                  idx,
+                                  *(float*)&(g_min.v), *(float*)&(g_max.v),
+                                  *(float*)&(src.v), *(float*)&(fd.v));
+                    }}, OPFVV, SimdFloatSegment3QuantOp, ScalarVs1);
+                }
+                0x11: VfReduceSahcostOp::vfred_sahcost_v();
+                format VfSeg3MergeOp {
+                    0x14: vfseg3_surface_vv({{
+                        auto fd = fsub<et>(ftype<et>(Vs2_vu[i]),
+                                          ftype<et>(Vs1_vu[i]));
+                        Vd_vu[i] = fd.v;
+                    }}, {{
+                        auto dx = ftype<et>(Vtmp0[i]);
+                        auto dy = ftype<et>(Vtmp1[i]);
+                        auto dz = ftype<et>(Vtmp2[i]);
+                        et res;
+                        if(fle<et>(dx, ui32_to_f32(0)) ||
+                            fle<et>(dy, ui32_to_f32(0)) ||
+                            fle<et>(dz, ui32_to_f32(0)))
+                            res = ui32_to_f32(0);
+                        else {
+                            res = fadd<et>(
+                                      fadd<et>(
+                                          fmul<et>(dx, dy),
+                                          fmul<et>(dx, dz)
+                                      ),
+                                      fmul<et>(dy, dz));
+                            res = fmul<et>(res, ui32_to_f32(2));
+                        }
+                        Vd[i] = res.v;
+                        DPRINTFR(SimdFloatSegment3,
+                                  "dx %.2f dy %.2f dz %.2f -> %.2f\n",
+                                  *(float*)&Vtmp0[i], *(float*)&Vtmp1[i],
+                                  *(float*)&Vtmp2[i],
+                                  *(float*)&Vd[i]);
+                    }}, OPFVV, SimdFloatSegment3SurfaceOp);
+                    0x16: vfseg3_morton30_vv({{
+                        auto src = ftype<et>(Vs2_vu[i]);
+                        auto quantized = quantize_coordinate10(src);
+                        Vd_vu[i] = quantized;
+                        DPRINTFR(SimdFloatSegment3,
+                                  "quantized %.2f -> %08x\n",
+                                  *(float*)&src.v, quantized);
+                    }}, {{
+                        vu xx = expand_bits_for_morton10(Vtmp0[i]);
+                        vu yy = expand_bits_for_morton10(Vtmp1[i]);
+                        vu zz = expand_bits_for_morton10(Vtmp2[i]);
+                        Vd[i] = xx | (yy << 1) | (zz << 2);
+                        DPRINTFR(SimdFloatSegment3,
+                                  "xx %08x yy %08x zz %08x -> %08x\n",
+                                  xx, yy, zz, Vd[i]);
+                    }}, OPFVV, SimdFloatSegment3MortonOp);
+                    0x1e: vfseg3_morton60_vv({{
+                        auto src = ftype<et>(Vs2_vu[i]);
+                        auto quantized = quantize_coordinate20(src);
+                        Vd_vu[i] = quantized;
+                        DPRINTFR(SimdFloatSegment3,
+                                  "quantized %.2f -> %08x\n",
+                                  *(float*)&src.v, quantized);
+                    }}, {{
+                        auto id = i + offset;
+                        vwu xx = expand_bits_for_morton20(Vtmp0[id]);
+                        vwu yy = expand_bits_for_morton20(Vtmp1[id]);
+                        vwu zz = expand_bits_for_morton20(Vtmp2[id]);
+                        Vd_w[i] = xx | (yy << 1) | (zz << 2);
+                        DPRINTFR(SimdFloatSegment3,
+                                  "id: %d,\n"
+                                  "xq %08x yq %08x zq %08x ->\n"
+                                  "xx %016lx yy %016lx zz %016lx -> %016lx\n",
+                                  id, Vtmp0[id], Vtmp1[id], Vtmp2[id],
+                                  xx, yy, zz, Vd_w[i]);
+                    }}, OPFVV, SimdFloatSegment3MortonOp, WideningVd);
+                }
                 // VWFUNARY0
                 0x10: decode VS1 {
                     0x00: decode VM {
@@ -5257,6 +5347,48 @@ decode QUADRANT default Unknown::unknown() {
                         Vd_ub[(i + offset)/8] = ASSIGN_VD_BIT(i + offset,
                             (Vs2_vi[i] > Rs1_vi));
                     }}, OPIVX, SimdCmpOp);
+                }
+                format VfSeg3Op {
+                    0x3e: vfseg3red_max_vs({{
+                        int s_idx = Rs1_vu;
+                        vu base_s;
+                        if (s_idx >= microVl){
+                            s_idx = 0;
+                            base_s = Vs3_vu[0];
+                        } else {
+                            base_s = Vs2_vu[s_idx];
+                        }
+                        for (uint32_t i = 0; i < this->microVl; i++) {
+                            Vd_vu[i] = Vs3_vu[i];
+                        }
+                        Vd_vu[s_idx] = reduce_loop([](const vu& src1,
+                                                      const vu& src2) {
+                            return fmax<et>(ftype<et>(src1), ftype<et>(src2));
+                        }, s_idx, base_s, Vs3_vu, Vs2_vu);
+                        DPRINTF(SimdFloatSegment3,
+                                "vfseg3redmax dest pos: %s[%d]\n",
+                                registerName(destRegIdx(0)), s_idx);
+                    }}, OPIVX, SimdFloatSegment3ReduceCmpOp, NotUseLoop);
+                    0x3f: vfseg3red_min_vs({{
+                        int s_idx = Rs1_vu;
+                        vu base_s;
+                        if (s_idx >= microVl){
+                            s_idx = 0;
+                            base_s = Vs3_vu[0];
+                        } else {
+                            base_s = Vs2_vu[s_idx];
+                        }
+                        for (uint32_t i = 0; i < this->microVl; i++) {
+                            Vd_vu[i] = Vs3_vu[i];
+                        }
+                        Vd_vu[s_idx] = reduce_loop([](const vu& src1,
+                                                      const vu& src2) {
+                            return fmin<et>(ftype<et>(src1), ftype<et>(src2));
+                        }, s_idx, base_s, Vs3_vu, Vs2_vu);
+                        DPRINTF(SimdFloatSegment3,
+                                "vfseg3redmin dest pos: %s[%d]\n",
+                                registerName(destRegIdx(0)), s_idx);
+                    }}, OPIVX, SimdFloatSegment3ReduceCmpOp, NotUseLoop);
                 }
             }
             // OPFVF

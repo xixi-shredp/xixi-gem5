@@ -46,6 +46,7 @@ output header {{
 #include <softfloat.h>
 #include <specialize.h>
 
+#include "arch/riscv/insts/aabb.hh"
 #include "arch/riscv/insts/amo.hh"
 #include "arch/riscv/insts/bs.hh"
 #include "arch/riscv/insts/compressed.hh"
@@ -82,6 +83,7 @@ output decoder {{
 #include "base/cprintf.hh"
 #include "base/loader/symtab.hh"
 #include "cpu/thread_context.hh"
+#include "debug/SimdFloatSegment3.hh"
 #include "mem/packet.hh"
 #include "mem/request.hh"
 #include "sim/full_system.hh"
@@ -111,6 +113,7 @@ output exec {{
 #include "cpu/base.hh"
 #include "cpu/exetrace.hh"
 #include "debug/RiscvMisc.hh"
+#include "debug/SimdFloatSegment3.hh"
 #include "mem/packet.hh"
 #include "mem/packet_access.hh"
 #include "mem/request.hh"
