@@ -102,6 +102,7 @@ static const OpClass SimdFloatSegment3MortonOp
              = enums::SimdFloatSegment3Morton;
 static const OpClass SimdFloatReduceSahCostOp = enums::SimdFloatReduceSahCost;
 static const OpClass SimdFloatSegment3QuantOp = enums::SimdFloatSegment3Quant;
+static const OpClass SimdPrefixSumOp = enums::SimdPrefixSum;
 static const OpClass SimdAesOp = enums::SimdAes;
 static const OpClass SimdAesMixOp = enums::SimdAesMix;
 static const OpClass SimdSha1HashOp = enums::SimdSha1Hash;

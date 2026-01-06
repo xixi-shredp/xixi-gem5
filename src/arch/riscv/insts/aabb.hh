@@ -115,6 +115,27 @@ class Vfred_sahcost_vMicro : public VectorMicroInst
                        float32_t intersection_cost) const;
 };
 
+class VprefixMicro : public VectorMicroInst
+{
+  protected:
+    uint8_t regIdx;
+    mutable bool trimVl;
+    mutable uint32_t faultIdx;
+
+  public:
+    VprefixMicro(ExtMachInst _machInst, uint32_t _microVl,
+                   uint32_t _microIdx,
+                   uint32_t _elen, uint32_t _vlen);
+    Fault execute(ExecContext *, trace::InstRecord *) const override;
+    std::string generateDisassembly(
+        Addr pc, const loader::SymbolTable *symtab) const override;
+
+  private:
+    // vd
+    RegId srcRegIdxArr[2];
+    RegId destRegIdxArr[1];
+};
+
 
 // quantize float32_t coordinates into the range[0, , 2^10 - 1]
 static inline uint32_t

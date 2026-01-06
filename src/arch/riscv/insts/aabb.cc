@@ -337,5 +337,97 @@ Vfred_sahcost_vMicro::generateDisassembly(Addr pc,
     return ss.str();
 }
 
+VprefixMicro::VprefixMicro(ExtMachInst _machInst,
+                      uint32_t _microVl, uint32_t _microIdx,
+                      uint32_t _elen, uint32_t _vlen)
+: VectorMicroInst("vprefixsum_v_micro", _machInst,
+                  SimdPrefixSumOp, _microVl,
+                 _microIdx , _elen, _vlen)
+{
+    setRegIdxArrays(
+        reinterpret_cast<RegIdArrayPtr>(
+            &std::remove_pointer_t<decltype(this)>::srcRegIdxArr),
+        reinterpret_cast<RegIdArrayPtr>(
+            &std::remove_pointer_t<decltype(this)>::destRegIdxArr));
+
+    _numSrcRegs = 0;
+    _numDestRegs = 0;
+
+    flags[IsVector] = true;;
+    setDestRegIdx(_numDestRegs++, vecRegClass[_machInst.vd + _microIdx]);
+    _numTypedDestRegs[VecRegClass]++;
+
+    setSrcRegIdx(_numSrcRegs++, vecRegClass[_machInst.vs2 + _microIdx]);
+
+    if (_microIdx > 0){
+        setSrcRegIdx(_numSrcRegs++, vecRegClass[_machInst.vd + _microIdx - 1]);
+    }
+}
+
+Fault
+VprefixMicro::execute(ExecContext* xc,
+                              trace::InstRecord* traceData) const
+{
+    DPRINTF(SimdFloatSegment3, "execute Vprefixsum_vMicro : microIdx %d\n",
+            microIdx);
+    using et = float32_t;
+    using vu = decltype(et::v);
+
+    auto& tmp_d0  = *(VecRegContainer*)xc->getWritableRegOperand(this, 0);
+    auto Vd = tmp_d0.as<vu>();
+
+    VecRegContainer tmp_s0;
+    VecRegContainer tmp_s1;
+
+    xc->getRegOperand(this, 0, &tmp_s0);
+    auto Vs2 = tmp_s0.as<vu>();
+
+    vu* lastVd;
+    if (microIdx > 0){
+        xc->getRegOperand(this, 1, &tmp_s1);
+        lastVd = tmp_s1.as<vu>();
+    }
+
+    bool set_dirty = true;
+    bool check_vill = true;
+    Fault update_fault = updateVPUStatus(xc, machInst, set_dirty, check_vill);
+    if (update_fault != NoFault) { return update_fault; }
+
+    // code
+    vu prefix_sum = 0;
+    if (microIdx > 0)
+        prefix_sum = lastVd[microVl - 1];
+    for (uint32_t i = 0; i < this->microVl; i++) {
+        prefix_sum += Vs2[i];
+        Vd[i] = prefix_sum;
+    }
+
+
+    if (traceData) {
+        traceData->setData(vecRegClass, &tmp_d0);
+    }
+    return NoFault;
+}
+
+
+std::string
+VprefixMicro::generateDisassembly(Addr pc,
+        const loader::SymbolTable *symtab) const
+{
+    std::stringstream ss;
+    if (microIdx > 0){
+        ss << "Vprefixsum_vMicro" << microIdx << ' ' <<
+            registerName(destRegIdx(0)) << ", " <<
+            registerName(srcRegIdx(0))  << ", " <<
+            registerName(srcRegIdx(1));
+    }
+    else{
+        ss << "Vprefixsum_vMicro0" << ' ' <<
+            registerName(destRegIdx(0)) << ", " <<
+            registerName(srcRegIdx(0));
+    }
+    return ss.str();
+}
+
 } // namespace RiscvISA
 } // namespace gem5

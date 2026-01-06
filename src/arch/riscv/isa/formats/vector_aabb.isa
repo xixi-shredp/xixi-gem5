@@ -238,3 +238,15 @@ def format VfReduceSahcostOp() {{
     decode_block    = VfSeg3BaseDecodeBlock.subst(iop)
     exec_output     = ''
 }};
+
+def format VectorPrefixFormat() {{
+    op_class = "SimdPrefixSumOp"
+    iop = InstObjParams(name, Name, "VectorMacroInst", {
+        "op_class" : op_class,
+      }, [op_class])
+
+    header_output   = VprefixMacroDeclare.subst(iop)
+    decoder_output  = VprefixConstructor.subst(iop)
+    decode_block    = VfSeg3BaseDecodeBlock.subst(iop)
+    exec_output     = ''
+}};

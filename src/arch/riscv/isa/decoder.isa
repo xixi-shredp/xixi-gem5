@@ -3730,6 +3730,7 @@ decode QUADRANT default Unknown::unknown() {
                         Vd_vu[i] = Vs2_vu[i] ^ Vs1_vu[i];
                     }}, OPIVV, SimdAluOp);
                 }
+                0x01: VectorPrefixFormat::vprefixsum_v();
                 0x0c: VectorGatherFormat::vrgather_vv({{
                     for (uint32_t i = 0; i < microVl; i++) {
                         uint32_t ei = i + vs1_idx * vs1_elems + vs1_bias;

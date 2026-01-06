@@ -378,3 +378,71 @@ Fault
     return NoFault;
 }
 }};
+
+def template VprefixMacroDeclare {{
+
+class %(class_name)s : public %(base_class)s
+{
+private:
+    RegId srcRegIdxArr[1];
+    RegId destRegIdxArr[1];
+
+    const int elem_bits = 32;
+public:
+    %(class_name)s(ExtMachInst _machInst);
+    %(class_name)s(ExtMachInst _machInst, uint32_t _elen, uint32_t _vlen);
+    std::string generateDisassembly(
+            Addr pc, const loader::SymbolTable *symtab) const override
+    {
+        std::stringstream ss;
+        ss << mnemonic << ' ' << registerName(destRegIdx(0)) << ", " <<
+            registerName(srcRegIdx(0));
+        if (!machInst.vm)
+            ss << ", v0.t";
+        return ss.str();
+    }
+};
+}};
+
+def template VprefixConstructor {{
+
+%(class_name)s::%(class_name)s(ExtMachInst _machInst, uint32_t _elen,
+                                 uint32_t _vlen)
+    : %(base_class)s("Vprefixsum_v", _machInst,
+                      %(op_class)s, _elen, _vlen)
+{
+    setRegIdxArrays(
+        reinterpret_cast<RegIdArrayPtr>(
+            &std::remove_pointer_t<decltype(this)>::srcRegIdxArr),
+        reinterpret_cast<RegIdArrayPtr>(
+            &std::remove_pointer_t<decltype(this)>::destRegIdxArr));
+
+        setDestRegIdx(_numDestRegs++, vecRegClass[_machInst.vd]);
+        _numTypedDestRegs[vecRegClass.type()]++;
+        setSrcRegIdx(_numSrcRegs++, vecRegClass[_machInst.vs2]);
+        flags[IsVector]   = true;;
+
+    const int32_t micro_vlmax = vlen / elem_bits;
+    const uint32_t num_microops = ceil((float) this->vl / (micro_vlmax));
+    int32_t remaining_vl = this->vl;
+    int32_t micro_vl = std::min(remaining_vl, micro_vlmax);
+    StaticInstPtr microop;
+
+    if (micro_vl == 0) {
+        microop = new VectorNopMicroInst(_machInst);
+        this->microops.push_back(microop);
+    } else {
+        for (int i = 0; i < num_microops && micro_vl > 0; ++i) {
+            microop = new VprefixMicro(_machInst, micro_vl, i,
+                                              elen, vlen);
+            microop->setDelayedCommit();
+            this->microops.push_back(microop);
+            micro_vl = std::min(remaining_vl -= micro_vlmax, micro_vlmax);
+        }
+    }
+
+    this->microops.front()->setFlag(IsFirstMicroop);
+    this->microops.back()->setFlag(IsLastMicroop);
+    this->flags[IsVector] = true;
+}
+}};

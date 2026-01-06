@@ -89,6 +89,7 @@ class OpClass(Enum):
         "SimdFloatSegment3Morton",
         "SimdFloatSegment3Quant",
         "SimdFloatReduceSahCost",
+        "SimdPrefixSum",
         "SimdAes",
         "SimdAesMix",
         "SimdSha1Hash",
